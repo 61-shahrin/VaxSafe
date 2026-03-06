@@ -51,7 +51,7 @@ TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
         'DIRS': [BASE_DIR / 'templates', BASE_DIR / 'templates/htmlpages'],
-        'DIRS': [BASE_DIR / 'templates'],
+        
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -129,3 +129,4 @@ EMAIL_HOST_PASSWORD = 'your_app_password'  # Replace with App Password
 
 
 DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
+
