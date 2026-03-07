@@ -50,7 +50,6 @@ ROOT_URLCONF = 'vaxsafe_app.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-
         'DIRS': [BASE_DIR / 'templates'],
         'APP_DIRS': True,
         'OPTIONS': {
@@ -114,7 +113,6 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 # Login Redirects
 # =========================
 LOGIN_URL = 'login'
-LOGIN_REDIRECT_URL = 'dashboard'
 LOGOUT_REDIRECT_URL = 'home'
 
 # =========================
@@ -128,3 +126,4 @@ EMAIL_HOST_USER = 'your_email@gmail.com'  # Replace with your Gmail
 EMAIL_HOST_PASSWORD = 'your_app_password'  # Replace with App Password
 
 DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
+
