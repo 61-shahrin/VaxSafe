@@ -31,9 +31,8 @@ urlpatterns = [
     path('verify-email/', views.verify_email, name='verify_email'),
 
     # ======================
-    # DASHBOARD & PROFILE
+    #  PROFILE
     # ======================
-    path('dashboard/', views.dashboard, name='dashboard'),
     path('profile/', views.profile_view, name='profile'),
 ]
 
@@ -42,4 +41,5 @@ urlpatterns = [
 # ======================
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+
     urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
