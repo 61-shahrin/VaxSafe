@@ -1,5 +1,5 @@
 # vaxsafe/views.py
-# vaxsafe/views.py
+
 from django.shortcuts import render, redirect
 from django.contrib.auth import authenticate, login, logout
 from django.http import HttpResponse
@@ -8,6 +8,7 @@ from django.http import HttpResponse
 # =====================================
 # PUBLIC PAGES
 # =====================================
+
 def home(request):
     return render(request, 'htmlpages/home.html')
 
@@ -33,6 +34,7 @@ def send_message(request):
 # =====================================
 # AUTHENTICATION
 # =====================================
+
 def register(request):
     return render(request, 'htmlpages/register.html')
 
@@ -55,12 +57,8 @@ def verify_email(request):
 
 
 # =====================================
-# DASHBOARD & PROFILE
+# PROFILE PAGE
 # =====================================
-def dashboard(request):
-    return render(request, 'htmlpages/dashboard.html')
-
 
 def profile_view(request):
     return render(request, 'htmlpages/profile.html')
-
