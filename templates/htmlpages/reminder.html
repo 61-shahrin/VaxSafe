@@ -1,4 +1,3 @@
-```html
 {% extends 'base_log.html' %}
 {% block title %}My Reminders - VaxSafe{% endblock %}
 {% block content %}
@@ -6,6 +5,7 @@
 <div class="reminders-page">
   <div class="page-container">
 
+    <!-- ✅ Page Header -->
     <div class="page-header">
       <div class="header-content">
         <h2>📅 Vaccination Schedule</h2>
@@ -16,6 +16,7 @@
       </div>
     </div>
 
+    <!-- ✅ পুরনো Reminder Table (edit_reminder view এর জন্য) -->
     <form id="remindersForm" method="POST" action="{% url 'edit_reminder' %}">
       {% csrf_token %}
 
@@ -37,7 +38,7 @@
                   <td class="vaccine">
                     <span class="vaccine-pill">{{ r.vaccine_name }}</span>
                   </td>
-                  <td class="scheduled" data-dt="{{ r.scheduled_datetime|date:"Y-m-d\TH:i" }}">
+                  <td class="scheduled" data-dt="{{ r.scheduled_datetime|date:'Y-m-d\TH:i' }}">
                     <span class="date-text">{{ r.scheduled_datetime|date:"d M Y" }}</span>
                     <span class="time-text">{{ r.scheduled_datetime|date:"H:i" }}</span>
                   </td>
@@ -74,9 +75,81 @@
         </button>
       </div>
     </form>
+
+    <!-- ✅ নতুন VaccineReminder Section -->
+    <div class="vaccine-reminder-section" style="margin-top: 40px;">
+      <div class="row">
+
+        <!-- রিমাইন্ডার ফর্ম -->
+        <div class="col-md-5">
+          <div class="vr-card shadow">
+            <div class="vr-card-header">
+              ⏰ নতুন রিমাইন্ডার সেট করুন
+            </div>
+            <div class="vr-card-body">
+              <form method="POST" action="{% url 'set_reminder' %}">
+                {% csrf_token %}
+                {% if form %}
+                  {{ form.as_p }}
+                {% endif %}
+                <button type="submit" class="btn-primary w-100" style="margin-top:10px;">
+                  রিমাইন্ডার সেট করুন
+                </button>
+              </form>
+            </div>
+          </div>
+        </div>
+
+        <!-- ✅ নতুন রিমাইন্ডার লিস্ট (vaccine_reminders context variable) -->
+        <div class="col-md-7">
+          <h5 style="margin-bottom:16px;">📋 আমার রিমাইন্ডারসমূহ</h5>
+
+          {% if vaccine_reminders %}
+            {% for r in vaccine_reminders %}
+              <div class="vr-item
+                {% if r.reminder_date < today %}vr-past
+                {% elif r.reminder_date == today %}vr-today
+                {% else %}vr-upcoming{% endif %}">
+                <div class="vr-item-content">
+                  <div>
+                    <strong>💉 {{ r.vaccine_name }}</strong><br>
+                    <small>📅 {{ r.reminder_date }} | 🕐 {{ r.reminder_time }}</small>
+                    {% if r.note %}
+                      <br><small class="text-muted">📝 {{ r.note }}</small>
+                    {% endif %}
+                    <br>
+                    {% if r.reminder_date == today %}
+                      <span class="vr-badge vr-badge-today">আজকে! ⚡</span>
+                    {% elif r.reminder_date < today %}
+                      <span class="vr-badge vr-badge-past">শেষ হয়েছে</span>
+                    {% else %}
+                      <span class="vr-badge vr-badge-upcoming">আসন্ন</span>
+                    {% endif %}
+                  </div>
+                  <a href="{% url 'delete_reminder' r.pk %}"
+                     class="vr-delete-btn"
+                     onclick="return confirm('রিমাইন্ডার মুছে ফেলবেন?')">
+                    🗑️
+                  </a>
+                </div>
+              </div>
+            {% endfor %}
+          {% else %}
+            <div class="vr-empty">
+              <div style="font-size:32px; margin-bottom:8px;">📭</div>
+              কোনো রিমাইন্ডার নেই। উপরের ফর্ম থেকে যোগ করুন।
+            </div>
+          {% endif %}
+        </div>
+
+      </div>
+    </div>
+    <!-- ✅ নতুন রিমাইন্ডার Section শেষ -->
+
   </div>
 </div>
 
+<!-- ✅ Add Reminder Modal (পুরনো Reminder model) -->
 <div id="addModal" class="modal-overlay">
   <div class="modal-card">
     <div class="modal-header">
@@ -101,7 +174,7 @@
         <div class="form-group">
           <label>Date & Time</label>
           <div class="input-wrapper">
-             <input type="datetime-local" name="scheduled" required>
+            <input type="datetime-local" name="scheduled" required>
           </div>
         </div>
 
@@ -114,11 +187,11 @@
             </div>
           </div>
           <div class="form-group half">
-             <label>Family Member</label>
-             <div class="input-wrapper">
-               <span class="input-icon">👤</span>
-               <input type="text" name="family_member" placeholder="Name" required>
-             </div>
+            <label>Family Member</label>
+            <div class="input-wrapper">
+              <span class="input-icon">👤</span>
+              <input type="text" name="family_member" placeholder="Name" required>
+            </div>
           </div>
         </div>
       </div>
@@ -132,26 +205,20 @@
 </div>
 
 <style>
-/* ============================================
-   THEME VARIABLES (Clinical Palette)
-   ============================================ */
 :root {
-  --primary: #009688;       /* Teal - Trust */
+  --primary:      #009688;
   --primary-dark: #00796b;
-  --accent: #e0f2f1;        /* Light Teal Background */
-  --text-dark: #263238;     /* Dark Slate */
-  --text-grey: #546e7a;
-  --bg-page: #f4f6f8;       /* Clean Grey */
-  --white: #ffffff;
-  --success: #2e7d32;       /* Green */
-  --warning: #f57f17;       /* Amber */
-  --shadow-card: 0 4px 20px rgba(0,0,0,0.05);
-  --radius: 12px;
+  --accent:       #e0f2f1;
+  --text-dark:    #263238;
+  --text-grey:    #546e7a;
+  --bg-page:      #f4f6f8;
+  --white:        #ffffff;
+  --success:      #2e7d32;
+  --warning:      #f57f17;
+  --shadow-card:  0 4px 20px rgba(0,0,0,0.05);
+  --radius:       12px;
 }
 
-/* ============================================
-   PAGE LAYOUT
-   ============================================ */
 .reminders-page {
   padding: 40px 20px;
   min-height: 100vh;
@@ -161,12 +228,8 @@
   background-size: 20px 20px;
 }
 
-.page-container {
-  max-width: 1000px;
-  margin: 0 auto;
-}
+.page-container { max-width: 1000px; margin: 0 auto; }
 
-/* Header */
 .page-header {
   display: flex;
   justify-content: space-between;
@@ -178,42 +241,18 @@
   box-shadow: var(--shadow-card);
   border-left: 5px solid var(--primary);
 }
+.page-header h2 { color: var(--text-dark); font-size: 24px; margin: 0 0 5px 0; font-weight: 700; }
+.subtitle { color: var(--text-grey); margin: 0; font-size: 15px; }
+.header-icon { font-size: 30px; color: var(--primary); opacity: 0.2; }
 
-.page-header h2 {
-  color: var(--text-dark);
-  font-size: 24px;
-  margin: 0 0 5px 0;
-  font-weight: 700;
-}
-
-.subtitle {
-  color: var(--text-grey);
-  margin: 0;
-  font-size: 15px;
-}
-
-.header-icon {
-  font-size: 30px;
-  color: var(--primary);
-  opacity: 0.2;
-}
-
-/* ============================================
-   TABLE CARD
-   ============================================ */
 .table-card {
   background: var(--white);
   border-radius: var(--radius);
   box-shadow: var(--shadow-card);
   overflow: hidden;
-  border: 1px solid rgba(0,0,0,0.03);
 }
 
-.reminder-table {
-  width: 100%;
-  border-collapse: collapse;
-}
-
+.reminder-table { width: 100%; border-collapse: collapse; }
 .reminder-table th {
   background: #fcfcfc;
   padding: 18px 25px;
@@ -225,41 +264,17 @@
   letter-spacing: 0.8px;
   border-bottom: 2px solid #edf2f7;
 }
-
-.th-icon {
-  opacity: 0.7;
-  margin-right: 5px;
-}
-
 .reminder-table td {
   padding: 20px 25px;
   border-bottom: 1px solid #edf2f7;
   color: var(--text-dark);
   vertical-align: middle;
 }
+.reminder-row:hover { background-color: #f8fafc; }
+.vaccine-pill { font-weight: 600; color: var(--primary-dark); }
+.date-text { display: block; font-weight: 600; }
+.time-text { font-size: 13px; color: var(--text-grey); }
 
-.reminder-row:hover {
-  background-color: #f8fafc;
-}
-
-/* Cell Styling */
-.vaccine-pill {
-  font-weight: 600;
-  color: var(--primary-dark);
-}
-
-.date-text {
-  display: block;
-  font-weight: 600;
-  color: var(--text-dark);
-}
-
-.time-text {
-  font-size: 13px;
-  color: var(--text-grey);
-}
-
-/* Status Badges */
 .status-badge {
   padding: 6px 12px;
   border-radius: 50px;
@@ -269,50 +284,24 @@
   display: inline-flex;
   align-items: center;
 }
-
 .status-badge::before {
   content: '';
   display: inline-block;
-  width: 6px;
-  height: 6px;
+  width: 6px; height: 6px;
   border-radius: 50%;
   margin-right: 6px;
 }
-
-.status-badge.completed {
-  background-color: #e8f5e9;
-  color: var(--success);
-}
+.status-badge.completed { background: #e8f5e9; color: var(--success); }
 .status-badge.completed::before { background-color: var(--success); }
-
-.status-badge.pending {
-  background-color: #fff8e1;
-  color: var(--warning);
-}
+.status-badge.pending { background: #fff8e1; color: var(--warning); }
 .status-badge.pending::before { background-color: var(--warning); }
 
-/* Empty State */
-.empty-state td {
-  text-align: center;
-  padding: 60px !important;
-}
-.empty-img {
-  font-size: 40px;
-  margin-bottom: 10px;
-}
-.empty-message h4 { margin: 0 0 5px 0; color: var(--text-dark); }
+.empty-state td { text-align: center; padding: 60px !important; }
+.empty-img { font-size: 40px; margin-bottom: 10px; }
+.empty-message h4 { margin: 0 0 5px 0; }
 .empty-message p { margin: 0; color: var(--text-grey); }
 
-/* ============================================
-   BUTTONS & ACTIONS
-   ============================================ */
-.actions-bar {
-  margin-top: 20px;
-  display: flex;
-  justify-content: flex-end;
-  gap: 15px;
-}
-
+.actions-bar { margin-top: 20px; display: flex; justify-content: flex-end; gap: 15px; }
 button { cursor: pointer; border: none; outline: none; }
 
 .btn-primary {
@@ -322,17 +311,14 @@ button { cursor: pointer; border: none; outline: none; }
   border-radius: 8px;
   font-weight: 600;
   font-size: 14px;
-  box-shadow: 0 4px 12px rgba(0, 150, 136, 0.3);
+  box-shadow: 0 4px 12px rgba(0,150,136,0.3);
   transition: all 0.2s;
-  display: flex;
+  display: inline-flex;
   align-items: center;
   gap: 8px;
 }
-
-.btn-primary:hover {
-  background: var(--primary-dark);
-  transform: translateY(-2px);
-}
+.btn-primary:hover { background: var(--primary-dark); transform: translateY(-2px); }
+.btn-primary.w-100 { width: 100%; justify-content: center; }
 
 .btn-secondary {
   background: white;
@@ -343,20 +329,93 @@ button { cursor: pointer; border: none; outline: none; }
   font-weight: 600;
   font-size: 14px;
   transition: all 0.2s;
-  display: flex;
+  display: inline-flex;
   align-items: center;
   gap: 8px;
 }
+.btn-secondary:hover { border-color: var(--primary); color: var(--primary); background: var(--accent); }
 
-.btn-secondary:hover {
+/* ── VaccineReminder Cards ── */
+.vaccine-reminder-section .row { display: flex; flex-wrap: wrap; gap: 20px; }
+.vaccine-reminder-section .col-md-5 { flex: 0 0 38%; }
+.vaccine-reminder-section .col-md-7 { flex: 1; }
+
+.vr-card { background: white; border-radius: var(--radius); overflow: hidden; box-shadow: var(--shadow-card); }
+.vr-card-header { background: var(--primary); color: white; padding: 14px 20px; font-weight: 600; font-size: 15px; }
+.vr-card-body { padding: 20px; }
+.vr-card-body p { margin-bottom: 10px; }
+.vr-card-body label { font-size: 13px; font-weight: 600; color: var(--text-dark); display: block; margin-bottom: 4px; }
+.vr-card-body input, .vr-card-body textarea {
+  width: 100%;
+  padding: 9px 12px;
+  border: 1px solid #cfd8dc;
+  border-radius: 6px;
+  font-size: 14px;
+  background: #f9fafb;
+  box-sizing: border-box;
+}
+.vr-card-body input:focus, .vr-card-body textarea:focus {
   border-color: var(--primary);
-  color: var(--primary);
-  background: var(--accent);
+  background: white;
+  outline: none;
 }
 
-/* ============================================
-   MODAL (Clean Medical Style)
-   ============================================ */
+.vr-item {
+  background: white;
+  border-radius: 10px;
+  margin-bottom: 10px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+  overflow: hidden;
+}
+.vr-today  { border-left: 4px solid #43a047; }
+.vr-past   { border-left: 4px solid #90a4ae; opacity: 0.75; }
+.vr-upcoming { border-left: 4px solid var(--primary); }
+
+.vr-item-content {
+  padding: 14px 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.vr-badge {
+  display: inline-block;
+  margin-top: 5px;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 700;
+}
+.vr-badge-today    { background: #e8f5e9; color: #2e7d32; }
+.vr-badge-past     { background: #eceff1; color: #607d8b; }
+.vr-badge-upcoming { background: #e0f2f1; color: #00695c; }
+
+.vr-delete-btn {
+  padding: 6px 10px;
+  border: 1px solid #ef9a9a;
+  border-radius: 6px;
+  color: #e53935;
+  background: white;
+  font-size: 14px;
+  cursor: pointer;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: background 0.15s;
+}
+.vr-delete-btn:hover { background: #ffebee; }
+
+.vr-empty {
+  background: white;
+  border-radius: 10px;
+  padding: 32px;
+  text-align: center;
+  color: var(--text-grey);
+  font-size: 14px;
+  box-shadow: var(--shadow-card);
+}
+
+/* Modal */
 .modal-overlay {
   display: none;
   position: fixed;
@@ -367,7 +426,6 @@ button { cursor: pointer; border: none; outline: none; }
   justify-content: center;
   align-items: center;
 }
-
 .modal-card {
   background: var(--white);
   width: 90%;
@@ -377,7 +435,6 @@ button { cursor: pointer; border: none; outline: none; }
   animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
   overflow: hidden;
 }
-
 .modal-header {
   padding: 20px 25px;
   background: var(--primary);
@@ -385,67 +442,36 @@ button { cursor: pointer; border: none; outline: none; }
   justify-content: space-between;
   align-items: flex-start;
 }
-
 .modal-title h3 { margin: 0; color: white; font-size: 18px; }
-.modal-title p { margin: 2px 0 0 0; color: rgba(255,255,255,0.8); font-size: 13px; }
-
+.modal-title p  { margin: 2px 0 0 0; color: rgba(255,255,255,0.8); font-size: 13px; }
 .modal-close {
   background: rgba(255,255,255,0.2);
   color: white;
   width: 30px; height: 30px;
   border-radius: 50%;
   display: flex; align-items: center; justify-content: center;
-  font-size: 14px;
-  transition: background 0.2s;
+  font-size: 14px; transition: background 0.2s;
 }
 .modal-close:hover { background: rgba(255,255,255,0.4); }
-
 .modal-body { padding: 25px; }
-
-/* Form Inputs */
 .form-group { margin-bottom: 20px; }
 .form-row { display: flex; gap: 15px; }
 .half { flex: 1; }
-
-.form-group label {
-  display: block;
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--text-dark);
-  margin-bottom: 8px;
-}
-
-.input-wrapper {
-  position: relative;
-  display: flex;
-  align-items: center;
-}
-
-.input-icon {
-  position: absolute;
-  left: 12px;
-  font-size: 14px;
-  opacity: 0.6;
-  z-index: 1;
-}
-
+.form-group label { display: block; font-size: 13px; font-weight: 600; color: var(--text-dark); margin-bottom: 8px; }
+.input-wrapper { position: relative; display: flex; align-items: center; }
+.input-icon { position: absolute; left: 12px; font-size: 14px; opacity: 0.6; z-index: 1; }
 .form-group input {
   width: 100%;
-  padding: 12px 12px 12px 36px; /* Space for icon */
+  padding: 12px 12px 12px 36px;
   border: 1px solid #cfd8dc;
   border-radius: 8px;
   font-size: 14px;
   color: var(--text-dark);
-  transition: border 0.2s;
   background: #f9fafb;
+  transition: border 0.2s;
+  box-sizing: border-box;
 }
-
-.form-group input:focus {
-  background: white;
-  border-color: var(--primary);
-  box-shadow: 0 0 0 3px rgba(0, 150, 136, 0.1);
-}
-
+.form-group input:focus { background: white; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(0,150,136,0.1); outline: none; }
 .modal-footer {
   padding: 15px 25px;
   background: #fcfcfc;
@@ -454,31 +480,14 @@ button { cursor: pointer; border: none; outline: none; }
   justify-content: flex-end;
   gap: 10px;
 }
-
-.btn-ghost {
-  background: transparent;
-  color: var(--text-grey);
-  padding: 10px 20px;
-  border-radius: 8px;
-  font-weight: 600;
-}
+.btn-ghost { background: transparent; color: var(--text-grey); padding: 10px 20px; border-radius: 8px; font-weight: 600; }
 .btn-ghost:hover { background: #eceff1; color: var(--text-dark); }
 
-/* Animation */
 @keyframes slideUp {
   from { opacity: 0; transform: translateY(40px); }
-  to { opacity: 1; transform: translateY(0); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 
-/* Edit Inputs */
-.reminder-row input {
-  width: 100%;
-  padding: 8px;
-  border: 1px solid var(--primary);
-  border-radius: 4px;
-}
-
-/* Responsive */
 @media (max-width: 600px) {
   .page-header { flex-direction: column; align-items: flex-start; }
   .actions-bar { flex-direction: column-reverse; }
@@ -486,77 +495,54 @@ button { cursor: pointer; border: none; outline: none; }
   .reminder-table th, .reminder-table td { padding: 12px 10px; font-size: 13px; }
   .th-icon { display: none; }
   .form-row { flex-direction: column; gap: 0; }
+  .vaccine-reminder-section .col-md-5,
+  .vaccine-reminder-section .col-md-7 { flex: 0 0 100%; }
 }
 </style>
 
 <script>
-// Modal toggle logic (Preserved)
-const addModal = document.getElementById('addModal');
-const openAddBtn = document.getElementById('openAdd');
+const addModal    = document.getElementById('addModal');
+const openAddBtn  = document.getElementById('openAdd');
 const closeAddBtn = document.getElementById('closeAdd');
 
-if (openAddBtn) {
-  openAddBtn.onclick = () => addModal.style.display = 'flex';
-}
+if (openAddBtn)  openAddBtn.onclick  = () => addModal.style.display = 'flex';
+if (closeAddBtn) closeAddBtn.onclick = () => addModal.style.display = 'none';
 
-if (closeAddBtn) {
-  closeAddBtn.onclick = () => addModal.style.display = 'none';
-}
-
-addModal.onclick = (e) => {
-  if (e.target === addModal) addModal.style.display = 'none';
-};
-
+addModal.onclick = (e) => { if (e.target === addModal) addModal.style.display = 'none'; };
 document.addEventListener('keydown', (e) => {
-  if (e.key === 'Escape' && addModal.style.display === 'flex') {
-    addModal.style.display = 'none';
-  }
+  if (e.key === 'Escape' && addModal.style.display === 'flex') addModal.style.display = 'none';
 });
 
-// Edit Logic (Preserved)
 const editBtn = document.getElementById('editBtn');
-
 editBtn.onclick = () => {
   const rows = document.querySelectorAll('#remindersBody tr.reminder-row');
-
-  if (rows.length === 0) {
-    alert('No reminders to edit!');
-    return;
-  }
+  if (rows.length === 0) { alert('No reminders to edit!'); return; }
 
   rows.forEach(row => {
-    const vaccineCell = row.querySelector('.vaccine');
+    const vaccineCell   = row.querySelector('.vaccine');
     const scheduledCell = row.querySelector('.scheduled');
-    const familyCell = row.querySelector('.family');
-    const statusCell = row.querySelector('.status');
+    const familyCell    = row.querySelector('.family');
+    const statusCell    = row.querySelector('.status');
 
-    // Get current values (cleaner extraction for edit mode)
     const vaccine = vaccineCell.innerText.trim();
-    const dt = scheduledCell.getAttribute('data-dt');
-    const family = familyCell.innerText.trim();
+    const dt      = scheduledCell.getAttribute('data-dt');
+    const family  = familyCell.innerText.trim();
     const statusBadge = row.querySelector('.status-badge');
-    const status = statusBadge ? statusBadge.innerText.trim() : '';
-
-    // Replace with inputs
-    vaccineCell.innerHTML = `<input type="text" name="vaccine_name_${row.dataset.id}" value="${vaccine}">`;
-    scheduledCell.innerHTML = `<input type="datetime-local" name="scheduled_${row.dataset.id}" value="${dt}">`;
-    familyCell.innerHTML = `<input type="text" name="family_member_${row.dataset.id}" value="${family}">`;
-
-    // Checkbox for status
+    const status  = statusBadge ? statusBadge.innerText.trim() : '';
     const isCompleted = (status === 'Completed' || status === 'COMPLETED');
-    statusCell.innerHTML = `
+
+    vaccineCell.innerHTML   = `<input type="text" name="vaccine_name_${row.dataset.id}" value="${vaccine}">`;
+    scheduledCell.innerHTML = `<input type="datetime-local" name="scheduled_${row.dataset.id}" value="${dt}">`;
+    familyCell.innerHTML    = `<input type="text" name="family_member_${row.dataset.id}" value="${family}">`;
+    statusCell.innerHTML    = `
       <label style="display:flex; align-items:center; gap:5px; cursor:pointer;">
-        <input type="checkbox" name="completed_${row.dataset.id}" ${isCompleted ? "checked" : ""} style="width:18px; height:18px;">
+        <input type="checkbox" name="completed_${row.dataset.id}" ${isCompleted ? 'checked' : ''} style="width:18px; height:18px;">
         <span style="font-size:12px; font-weight:600;">Completed</span>
-      </label>
-    `;
+      </label>`;
   });
 
-  // Change Edit button to Save
   editBtn.innerHTML = '<i class="fas fa-save"></i> Save Changes';
-  editBtn.classList.remove('btn-secondary');
-  editBtn.classList.add('btn-primary'); // Highlight the save button
-
+  editBtn.classList.replace('btn-secondary', 'btn-primary');
   editBtn.onclick = () => {
     if (confirm('Save changes to reminders?')) {
       document.getElementById('remindersForm').submit();
@@ -566,5 +552,3 @@ editBtn.onclick = () => {
 </script>
 
 {% endblock %}
-
-```
