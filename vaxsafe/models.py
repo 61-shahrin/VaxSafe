@@ -556,11 +556,11 @@ class Notification(models.Model):
 
 
 # ============================================================
-# ✅ VACCINE REMINDER MODEL  (নতুন)
+# ✅ VACCINE REMINDER MODEL  — family_member field যোগ করা হয়েছে
+# শুধু এই class টা models.py তে replace করো
 # ============================================================
 
 class VaccineReminder(models.Model):
-    # ✅ related_name='vaccine_reminders' — Reminder.user এর related_name='reminders' এর সাথে conflict নেই
     user          = models.ForeignKey(User, on_delete=models.CASCADE, related_name='vaccine_reminders')
     vaccine_name  = models.CharField(max_length=200)
     reminder_date = models.DateField()
@@ -569,10 +569,137 @@ class VaccineReminder(models.Model):
     is_sent       = models.BooleanField(default=False)
     created_at    = models.DateTimeField(auto_now_add=True)
 
+    # ✅ নতুন field — কোন family member এর জন্য reminder (optional)
+    family_member = models.ForeignKey(
+        'FamilyMember',
+        on_delete=models.SET_NULL,
+        null=True, blank=True,
+        related_name='vaccine_reminders'
+    )
+
     class Meta:
         ordering = ['reminder_date']
         verbose_name = 'Vaccine Reminder'
         verbose_name_plural = 'Vaccine Reminders'
 
     def __str__(self):
-        return f"{self.user.username} - {self.vaccine_name} - {self.reminder_date}"
+        if self.family_member:
+            return f"{self.user.username} → {self.family_member.name} — {self.vaccine_name} — {self.reminder_date}"
+        return f"{self.user.username} (Self) — {self.vaccine_name} — {self.reminder_date}"
+
+    def get_recipient_name(self):
+        """কার জন্য reminder সেট আছে তার নাম।"""
+        if self.family_member:
+            return self.family_member.name
+        return self.user.get_full_name() or self.user.username
+# ============================================================
+# VACCINE SCHEDULE MODEL (Admin-controlled)
+# ============================================================
+
+class VaccineSchedule(models.Model):
+    VACCINE_TYPES = [
+        ('COVID-19',              'COVID-19'),
+        ('Influenza',             'Influenza (Flu)'),
+        ('Hepatitis B',           'Hepatitis B'),
+        ('Hepatitis A',           'Hepatitis A'),
+        ('MMR',                   'MMR (Measles, Mumps, Rubella)'),
+        ('Polio',                 'Polio'),
+        ('DTP',                   'DTP (Diphtheria, Tetanus, Pertussis)'),
+        ('Varicella',             'Varicella (Chickenpox)'),
+        ('HPV',                   'HPV'),
+        ('Pneumococcal',          'Pneumococcal'),
+        ('BCG',                   'BCG (Tuberculosis)'),
+        ('Rotavirus',             'Rotavirus'),
+        ('Typhoid',               'Typhoid'),
+        ('Yellow Fever',          'Yellow Fever'),
+        ('Meningococcal',         'Meningococcal'),
+        ('Japanese Encephalitis', 'Japanese Encephalitis'),
+        ('Rabies',                'Rabies'),
+        ('Other',                 'Other'),
+    ]
+
+    DOSE_CHOICES = [
+        ('1st',     '1st Dose'),
+        ('2nd',     '2nd Dose'),
+        ('3rd',     '3rd Dose'),
+        ('Booster', 'Booster'),
+        ('Single',  'Single Dose'),
+    ]
+
+    vaccine_name   = models.CharField(max_length=100, choices=VACCINE_TYPES)
+    dose_number    = models.CharField(max_length=20, choices=DOSE_CHOICES)
+    interval_days  = models.PositiveIntegerField(
+        default=0,
+        help_text="পরের ডোজ কতদিন পর? (শেষ ডোজ হলে 0 দিন)"
+    )
+    description    = models.TextField(blank=True, null=True,
+                                      help_text="এই ডোজ সম্পর্কে নোট")
+    is_active      = models.BooleanField(default=True)
+    created_by     = models.ForeignKey(
+        User, on_delete=models.SET_NULL,
+        null=True, blank=True
+    )
+    created_at     = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering         = ['vaccine_name', 'dose_number']
+        verbose_name     = 'Vaccine Schedule'
+        verbose_name_plural = 'Vaccine Schedules'
+        unique_together  = ('vaccine_name', 'dose_number')
+
+    def __str__(self):
+        days = f" → পরের ডোজ {self.interval_days} দিন পর" if self.interval_days else " (শেষ ডোজ)"
+        return f"{self.vaccine_name} — {self.dose_number}{days}"
+
+# ============================================================
+# CUSTOM VACCINE TYPE MODEL (Admin-controlled)
+# নতুন vaccine add হলে সব user কে notify করবে
+# ============================================================
+
+class CustomVaccineType(models.Model):
+    name              = models.CharField(max_length=200, unique=True)
+    description       = models.TextField(blank=True, null=True)
+    is_active         = models.BooleanField(default=True)
+    notify_all_users  = models.BooleanField(
+        default=True,
+        help_text="✅ Save করলে সব user কে App Notification পাঠাবে"
+    )
+    created_by  = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
+    created_at  = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['name']
+        verbose_name        = 'Custom Vaccine Type'
+        verbose_name_plural = 'Custom Vaccine Types'
+
+    def __str__(self):
+        return self.name
+
+# ============================================================
+# OTP VERIFICATION MODEL (Registration এর জন্য)
+# ============================================================
+
+class OTPVerification(models.Model):
+    email           = models.EmailField()
+    otp             = models.CharField(max_length=6)
+    full_name       = models.CharField(max_length=150)
+    hashed_password = models.CharField(max_length=255)
+    created_at      = models.DateTimeField(auto_now_add=True)
+    attempts        = models.PositiveIntegerField(default=0)
+    is_used         = models.BooleanField(default=False)
+
+    class Meta:
+        ordering = ['-created_at']
+        verbose_name = 'OTP Verification'
+
+    def is_valid(self):
+        """১০ মিনিটের মধ্যে valid।"""
+        from datetime import timedelta
+        return (
+            not self.is_used
+            and self.attempts < 5
+            and timezone.now() < self.created_at + timedelta(minutes=10)
+        )
+
+    def __str__(self):
+        return f"{self.email} — {self.otp}"
