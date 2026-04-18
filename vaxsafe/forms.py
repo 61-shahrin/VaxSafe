@@ -6,15 +6,24 @@ from django.core.exceptions import ValidationError
 from .models import (
     Profile, FamilyMember, Vaccine, Reminder,
     FamilyGroup, FamilyGroupMember, FamilyInvitation,
-    VaccineReminder,   # ✅ এখানে import করা হয়েছে
+    VaccineReminder,
+    VaccineSchedule,   # ← এটা যোগ করো
 )
-
-
 # ============================================================
 # PROFILE FORM
 # ============================================================
 
 class ProfileForm(forms.ModelForm):
+    # ✅ User model এর email field (profile model এ নেই, তাই extra field)
+    email = forms.EmailField(
+        required=False,
+        widget=forms.EmailInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'Enter email address',
+        }),
+        label='Email Address'
+    )
+
     class Meta:
         model = Profile
         fields = ['mobile', 'gender', 'date_of_birth', 'profession', 'address', 'blood_group', 'photo']
@@ -44,6 +53,13 @@ class ProfileForm(forms.ModelForm):
             'address': 'Address', 'blood_group': 'Blood Group', 'photo': 'Profile Photo',
         }
 
+    def __init__(self, *args, **kwargs):
+        # ✅ user instance নিয়ে email field populate করো
+        user = kwargs.pop('user', None)
+        super().__init__(*args, **kwargs)
+        if user:
+            self.fields['email'].initial = user.email
+
     def clean_mobile(self):
         mobile = self.cleaned_data.get('mobile')
         if mobile:
@@ -60,7 +76,6 @@ class ProfileForm(forms.ModelForm):
                 raise ValidationError('Please enter a valid blood group (A+, A-, B+, B-, AB+, AB-, O+, O-)')
             return blood_group.upper()
         return blood_group
-
 
 # ============================================================
 # FAMILY MEMBER FORM
@@ -169,6 +184,19 @@ class VaccineForm(forms.ModelForm):
         self.user = kwargs.pop('user', None)
         super().__init__(*args, **kwargs)
 
+        # ✅ Dynamic vaccine choices: hardcoded + custom types
+        from .models import CustomVaccineType
+        custom_choices = [
+            (ct.name, ct.name)
+            for ct in CustomVaccineType.objects.filter(is_active=True)
+        ]
+        all_choices = list(Vaccine.VACCINE_TYPES) + custom_choices
+        self.fields['name'].widget = forms.Select(
+            attrs={'class': 'form-control'},
+            choices=all_choices
+        )
+        self.fields['name'].choices = all_choices
+
         if self.user:
             self.fields['family_member'].queryset = FamilyMember.objects.filter(
                 user=self.user
@@ -243,6 +271,52 @@ class ReminderForm(forms.ModelForm):
             raise ValidationError('Reminder date must be in the future.')
         return scheduled
 
+
+# ============================================================
+# VACCINE APPLICATION FORM  (User শুধু এটাই ব্যবহার করবে)
+# ============================================================
+
+class VaccineApplicationForm(forms.ModelForm):
+    vaccine_schedule = forms.ModelChoiceField(
+        queryset=VaccineSchedule.objects.filter(is_active=True).order_by('vaccine_name', 'dose_number'),
+        empty_label="— টিকা সিলেক্ট করুন —",
+        widget=forms.Select(attrs={'class': 'form-control', 'id': 'id_vaccine_schedule'}),
+        label='টিকার নাম ও ডোজ'
+    )
+
+    class Meta:
+        model  = Vaccine
+        fields = [
+            'family_member', 'vaccine_schedule',
+            'date_administered', 'location', 'healthcare_provider', 'notes',
+        ]
+        widgets = {
+            'family_member':       forms.Select(attrs={'class': 'form-control'}),
+            'date_administered':   forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'location':            forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'যেমন: ঢাকা মেডিকেল'}),
+            'healthcare_provider': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'ডাক্তারের নাম'}),
+            'notes':               forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+        }
+        labels = {
+            'family_member':       'কার জন্য? (নিজের জন্য ফাঁকা রাখুন)',
+            'date_administered':   '১ম ডোজের তারিখ',
+            'location':            'কোথায় নিয়েছেন',
+            'healthcare_provider': 'ডাক্তার / স্বাস্থ্যকর্মী',
+            'notes':               'অতিরিক্ত নোট',
+        }
+
+    def __init__(self, *args, **kwargs):
+        self.user = kwargs.pop('user', None)
+        super().__init__(*args, **kwargs)
+
+        if self.user:
+            self.fields['family_member'].queryset = FamilyMember.objects.filter(
+                user=self.user
+            ).order_by('name')
+            self.fields['family_member'].empty_label = "নিজের জন্য (Self)"
+
+        for f in ['family_member', 'location', 'healthcare_provider', 'notes']:
+            self.fields[f].required = False
 
 # ============================================================
 # FAMILY GROUP FORMS
