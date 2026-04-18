@@ -101,8 +101,21 @@
       <div class="vaccine-card vaccine-upcoming" data-status="{{ vaccine.status }}">
         <div class="vaccine-card-header">
           <div class="vaccine-type-badge">{{ vaccine.name }}</div>
-          <div class="vaccine-status status-{{ vaccine.status|lower }}">
-            {{ vaccine.status }}
+          <div class="vaccine-header-right">
+            <div class="vaccine-status status-{{ vaccine.status|lower }}">
+              {{ vaccine.status }}
+            </div>
+            <!-- ✅ Mark Done Button (Admin Only) -->
+            {% if user.is_staff or user.is_superuser %}
+              {% if vaccine.status != 'Completed' and vaccine.status != 'Cancelled' %}
+                <a href="{% url 'mark_vaccine_completed' vaccine.id %}"
+                   class="mark-done-btn"
+                   onclick="return confirm('এই Dose Completed করবেন? User কে Notification পাঠানো হবে।')">
+                  ✅ Mark Done
+                </a>
+              {% endif %}
+            {% endif %}
+            <!-- ✅ Mark Done Button শেষ -->
           </div>
         </div>
 
@@ -163,8 +176,21 @@
       <div class="vaccine-card vaccine-past" data-status="{{ vaccine.status }}">
         <div class="vaccine-card-header">
           <div class="vaccine-type-badge">{{ vaccine.name }}</div>
-          <div class="vaccine-status status-{{ vaccine.status|lower }}">
-            {{ vaccine.status }}
+          <div class="vaccine-header-right">
+            <div class="vaccine-status status-{{ vaccine.status|lower }}">
+              {{ vaccine.status }}
+            </div>
+            <!-- ✅ Mark Done Button (Admin Only) -->
+            {% if user.is_staff or user.is_superuser %}
+              {% if vaccine.status != 'Completed' and vaccine.status != 'Cancelled' %}
+                <a href="{% url 'mark_vaccine_completed' vaccine.id %}"
+                   class="mark-done-btn"
+                   onclick="return confirm('এই Dose Completed করবেন? User কে Notification পাঠানো হবে।')">
+                  ✅ Mark Done
+                </a>
+              {% endif %}
+            {% endif %}
+            <!-- ✅ Mark Done Button শেষ -->
           </div>
         </div>
 
@@ -329,14 +355,8 @@
 }
 
 @keyframes slideDown {
-  from {
-    opacity: 0;
-    transform: translateY(-20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+  from { opacity: 0; transform: translateY(-20px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 
 .filter-options {
@@ -418,10 +438,8 @@
 .stat-card::before {
   content: '';
   position: absolute;
-  top: 0;
-  left: 0;
-  width: 5px;
-  height: 100%;
+  top: 0; left: 0;
+  width: 5px; height: 100%;
   transition: width 0.3s ease;
 }
 
@@ -430,85 +448,38 @@
   box-shadow: 0 8px 25px rgba(0, 0, 0, 0.12);
 }
 
-.stat-card:hover::before {
-  width: 100%;
-  opacity: 0.05;
-}
+.stat-card:hover::before { width: 100%; opacity: 0.05; }
 
-.stat-upcoming::before {
-  background: linear-gradient(135deg, #00b4d8 0%, #0077b6 100%);
-}
-
-.stat-completed::before {
-  background: linear-gradient(135deg, #0ba360 0%, #3cba92 100%);
-}
-
-.stat-overdue::before {
-  background: linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 100%);
-}
-
-.stat-total::before {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-}
+.stat-upcoming::before  { background: linear-gradient(135deg, #00b4d8 0%, #0077b6 100%); }
+.stat-completed::before { background: linear-gradient(135deg, #0ba360 0%, #3cba92 100%); }
+.stat-overdue::before   { background: linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 100%); }
+.stat-total::before     { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
 
 .stat-icon {
-  width: 60px;
-  height: 60px;
+  width: 60px; height: 60px;
   border-radius: 12px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 28px;
-  color: white;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 28px; color: white;
 }
 
-.stat-upcoming .stat-icon {
-  background: linear-gradient(135deg, #00b4d8 0%, #0077b6 100%);
-}
+.stat-upcoming  .stat-icon { background: linear-gradient(135deg, #00b4d8 0%, #0077b6 100%); }
+.stat-completed .stat-icon { background: linear-gradient(135deg, #0ba360 0%, #3cba92 100%); }
+.stat-overdue   .stat-icon { background: linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 100%); }
+.stat-total     .stat-icon { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
 
-.stat-completed .stat-icon {
-  background: linear-gradient(135deg, #0ba360 0%, #3cba92 100%);
-}
-
-.stat-overdue .stat-icon {
-  background: linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 100%);
-}
-
-.stat-total .stat-icon {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-}
-
-.stat-content h3 {
-  font-size: 32px;
-  font-weight: 800;
-  margin: 0;
-  color: #2c3e50;
-}
-
-.stat-content p {
-  font-size: 14px;
-  color: #636e72;
-  margin: 5px 0 0 0;
-}
+.stat-content h3 { font-size: 32px; font-weight: 800; margin: 0; color: #2c3e50; }
+.stat-content p  { font-size: 14px; color: #636e72; margin: 5px 0 0 0; }
 
 /* Vaccines Section */
-.vaccines-section {
-  margin-bottom: 40px;
-}
+.vaccines-section { margin-bottom: 40px; }
 
 .section-title {
-  font-size: 24px;
-  font-weight: 700;
-  color: #2c3e50;
+  font-size: 24px; font-weight: 700; color: #2c3e50;
   margin-bottom: 20px;
-  display: flex;
-  align-items: center;
-  gap: 10px;
+  display: flex; align-items: center; gap: 10px;
 }
 
-.section-title i {
-  color: #00b4d8;
-}
+.section-title i { color: #00b4d8; }
 
 /* Vaccines Grid */
 .vaccines-grid {
@@ -524,7 +495,6 @@
   overflow: hidden;
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
   transition: all 0.3s ease;
-  position: relative;
 }
 
 .vaccine-card:hover {
@@ -539,14 +509,19 @@
   justify-content: space-between;
   align-items: center;
   border-bottom: 3px solid;
+  flex-wrap: wrap;
+  gap: 8px;
 }
 
-.vaccine-upcoming .vaccine-card-header {
-  border-bottom-color: #00b4d8;
-}
+.vaccine-upcoming .vaccine-card-header { border-bottom-color: #00b4d8; }
+.vaccine-past     .vaccine-card-header { border-bottom-color: #0ba360; }
 
-.vaccine-past .vaccine-card-header {
-  border-bottom-color: #0ba360;
+/* ✅ Right side of header: status + mark-done grouped together */
+.vaccine-header-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
 }
 
 .vaccine-type-badge {
@@ -563,164 +538,103 @@
   text-transform: uppercase;
 }
 
-.status-scheduled {
-  background: linear-gradient(135deg, #00b4d8 0%, #0077b6 100%);
+.status-scheduled { background: linear-gradient(135deg, #00b4d8 0%, #0077b6 100%); color: white; }
+.status-completed { background: linear-gradient(135deg, #0ba360 0%, #3cba92 100%); color: white; }
+.status-overdue   { background: linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 100%); color: white; }
+
+/* ✅ Mark Done Button */
+.mark-done-btn {
+  background: #00b894;
+  color: white;
+  border-radius: 8px;
+  padding: 4px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: all 0.3s ease;
+  white-space: nowrap;
+}
+
+.mark-done-btn:hover {
+  background: #00a381;
+  transform: translateY(-1px);
+  box-shadow: 0 3px 10px rgba(0, 184, 148, 0.4);
   color: white;
 }
 
-.status-completed {
-  background: linear-gradient(135deg, #0ba360 0%, #3cba92 100%);
-  color: white;
-}
+.vaccine-card-body { padding: 20px; }
 
-.status-overdue {
-  background: linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 100%);
-  color: white;
-}
-
-.vaccine-card-body {
-  padding: 20px;
-}
-
-.vaccine-info {
-  margin-bottom: 15px;
-}
+.vaccine-info { margin-bottom: 15px; }
 
 .info-row {
-  display: flex;
-  align-items: center;
+  display: flex; align-items: center;
   gap: 10px;
   margin-bottom: 10px;
   color: #2c3e50;
   font-size: 14px;
 }
 
-.info-row i {
-  color: #00b4d8;
-  width: 20px;
-  font-size: 14px;
-}
+.info-row i { color: #00b4d8; width: 20px; font-size: 14px; }
 
 .vaccine-countdown {
-  background: linear-gradient(135deg, rgba(0, 180, 216, 0.1) 0%, rgba(0, 119, 182, 0.1) 100%);
-  padding: 15px;
-  border-radius: 10px;
-  text-align: center;
-  margin-top: 15px;
+  background: linear-gradient(135deg, rgba(0,180,216,0.1) 0%, rgba(0,119,182,0.1) 100%);
+  padding: 15px; border-radius: 10px;
+  text-align: center; margin-top: 15px;
 }
 
-.countdown-number {
-  display: block;
-  font-size: 32px;
-  font-weight: 800;
-  color: #00b4d8;
-}
-
-.countdown-text {
-  font-size: 14px;
-  color: #636e72;
-}
+.countdown-number { display: block; font-size: 32px; font-weight: 800; color: #00b4d8; }
+.countdown-text   { font-size: 14px; color: #636e72; }
 
 .vaccine-notes {
-  margin-top: 15px;
-  padding: 12px;
-  background: #f8f9fa;
-  border-radius: 8px;
+  margin-top: 15px; padding: 12px;
+  background: #f8f9fa; border-radius: 8px;
   border-left: 3px solid #00b4d8;
 }
 
-.vaccine-notes i {
-  color: #00b4d8;
-  margin-right: 8px;
-}
-
-.vaccine-notes p {
-  margin: 5px 0 0 0;
-  font-size: 13px;
-  color: #636e72;
-}
+.vaccine-notes i { color: #00b4d8; margin-right: 8px; }
+.vaccine-notes p { margin: 5px 0 0 0; font-size: 13px; color: #636e72; }
 
 .vaccine-card-footer {
   padding: 15px 20px;
   background: #f8f9fa;
-  display: flex;
-  gap: 10px;
+  display: flex; gap: 10px;
   border-top: 1px solid #e9ecef;
 }
 
 .card-btn {
-  flex: 1;
-  padding: 10px 16px;
+  flex: 1; padding: 10px 16px;
   border-radius: 8px;
   text-decoration: none;
   text-align: center;
-  font-size: 14px;
-  font-weight: 600;
+  font-size: 14px; font-weight: 600;
   transition: all 0.3s ease;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  display: flex; align-items: center; justify-content: center;
   gap: 6px;
 }
 
-.btn-edit {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
-}
+.btn-edit   { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; }
+.btn-delete { background: linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 100%); color: white; }
 
-.btn-edit:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
-}
-
-.btn-delete {
-  background: linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 100%);
-  color: white;
-}
-
-.btn-delete:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(255, 107, 107, 0.3);
-}
+.btn-edit:hover   { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(102,126,234,0.3); }
+.btn-delete:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(255,107,107,0.3); }
 
 /* Empty State */
 .empty-state {
-  text-align: center;
-  padding: 80px 20px;
-  background: white;
-  border-radius: 20px;
+  text-align: center; padding: 80px 20px;
+  background: white; border-radius: 20px;
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
 }
 
-.empty-icon {
-  font-size: 80px;
-  color: #00b4d8;
-  margin-bottom: 20px;
-  opacity: 0.5;
-}
-
-.empty-state h3 {
-  font-size: 24px;
-  color: #2c3e50;
-  margin-bottom: 10px;
-}
-
-.empty-state p {
-  font-size: 16px;
-  color: #636e72;
-  margin-bottom: 30px;
-}
+.empty-icon { font-size: 80px; color: #00b4d8; margin-bottom: 20px; opacity: 0.5; }
+.empty-state h3 { font-size: 24px; color: #2c3e50; margin-bottom: 10px; }
+.empty-state p  { font-size: 16px; color: #636e72; margin-bottom: 30px; }
 
 .btn-empty-action {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
+  display: inline-flex; align-items: center; gap: 8px;
   padding: 16px 32px;
   background: linear-gradient(135deg, #00b4d8 0%, #0077b6 100%);
-  color: white;
-  text-decoration: none;
-  border-radius: 25px;
-  font-weight: 600;
+  color: white; text-decoration: none;
+  border-radius: 25px; font-weight: 600;
   transition: all 0.3s ease;
   box-shadow: 0 4px 15px rgba(0, 180, 216, 0.3);
 }
@@ -730,104 +644,56 @@
   box-shadow: 0 6px 20px rgba(0, 180, 216, 0.5);
 }
 
-/* Responsive Design */
+/* Responsive */
 @media (max-width: 768px) {
-  .vaccine-schedule-page {
-    padding: 30px 20px;
-  }
-
-  .schedule-header h2 {
-    font-size: 32px;
-  }
-
-  .stats-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .vaccines-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .schedule-actions {
-    flex-direction: column;
-  }
-
-  .action-btn {
-    width: 100%;
-    justify-content: center;
-  }
-
-  .filter-options {
-    flex-direction: column;
-  }
-
-  .filter-select {
-    width: 100%;
-  }
+  .vaccine-schedule-page { padding: 30px 20px; }
+  .schedule-header h2 { font-size: 32px; }
+  .stats-grid    { grid-template-columns: 1fr; }
+  .vaccines-grid { grid-template-columns: 1fr; }
+  .schedule-actions { flex-direction: column; }
+  .action-btn { width: 100%; justify-content: center; }
+  .filter-options { flex-direction: column; }
+  .filter-select  { width: 100%; }
+  .vaccine-card-header { flex-direction: column; align-items: flex-start; }
 }
 </style>
 
 <!-- JavaScript -->
 <script>
-// Toggle Filter Panel
 function toggleFilters() {
   const panel = document.getElementById('filterPanel');
-  if (panel.style.display === 'none') {
-    panel.style.display = 'block';
-  } else {
-    panel.style.display = 'none';
-  }
+  panel.style.display = (panel.style.display === 'none') ? 'block' : 'none';
 }
 
-// Apply Filters
 function applyFilters() {
   const statusFilter = document.getElementById('statusFilter').value;
-  const memberFilter = document.getElementById('memberFilter').value;
 
-  const cards = document.querySelectorAll('.vaccine-card');
-
-  cards.forEach(card => {
-    let showCard = true;
-
-    // Filter by status
-    if (statusFilter !== 'all') {
-      const cardStatus = card.getAttribute('data-status');
-      if (cardStatus !== statusFilter) {
-        showCard = false;
-      }
+  document.querySelectorAll('.vaccine-card').forEach(card => {
+    let show = true;
+    if (statusFilter !== 'all' && card.getAttribute('data-status') !== statusFilter) {
+      show = false;
     }
-
-    // Show or hide card
-    if (showCard) {
+    if (show) {
       card.style.display = 'block';
-      setTimeout(() => {
-        card.style.opacity = '1';
-        card.style.transform = 'translateY(0)';
-      }, 10);
+      setTimeout(() => { card.style.opacity = '1'; card.style.transform = 'translateY(0)'; }, 10);
     } else {
       card.style.opacity = '0';
       card.style.transform = 'translateY(20px)';
-      setTimeout(() => {
-        card.style.display = 'none';
-      }, 300);
+      setTimeout(() => { card.style.display = 'none'; }, 300);
     }
   });
 }
 
-// Clear Filters
 function clearFilters() {
   document.getElementById('statusFilter').value = 'all';
   document.getElementById('memberFilter').value = 'all';
-
-  const cards = document.querySelectorAll('.vaccine-card');
-  cards.forEach(card => {
+  document.querySelectorAll('.vaccine-card').forEach(card => {
     card.style.display = 'block';
     card.style.opacity = '1';
     card.style.transform = 'translateY(0)';
   });
 }
 
-// Animation on load
 document.addEventListener('DOMContentLoaded', function() {
   const cards = document.querySelectorAll('.vaccine-card');
   cards.forEach((card, index) => {
@@ -862,105 +728,10 @@ document.addEventListener('DOMContentLoaded', function() {
     "Centers": "কেন্দ্রসমূহ",
     "News": "সংবাদ",
     "Profile": "প্রোফাইল",
-    "Your Health, Future-Proofed.": "আপনার স্বাস্থ্য, ভবিষ্যতের জন্য নিরাপদ।",
-    "The intelligent vaccination ecosystem keeping your family safe, one dose at a time.": "পরিবারের সুরক্ষায় বুদ্ধিমান টিকা ব্যবস্থাপনা — একটি ডোজ একটি সময়ে।",
-    "Get started": "শুরু করুন",
-    "Learn More": "আরও জানুন",
     "Smart Reminders": "স্মার্ট অনুস্মারক",
     "Never miss your next Vaccine": "পরবর্তী টিকার কথা কখনো ভুলবেন না",
     "Family Tracking": "পারিবারিক ট্র্যাকিং",
-    "Manage Vaccinations for your loved ones": "প্রিয়জনদের টিকাদান পরিচালনা করুন",
-    "Center Finder": "কেন্দ্র খুঁজুন",
-    "Locate nearby vaccination centers": "কাছের টিকাদান কেন্দ্র খুঁজুন",
-    "Latest Updates": "সর্বশেষ আপডেট",
-    "Stay informed with the newest vaccine-related news.": "টিকা সংক্রান্ত সর্বশেষ খবর জানুন।",
-    "Get health alerts and vaccine updates": "স্বাস্থ্য সতর্কতা ও টিকা আপডেট পান",
-    "Secure & Private": "নিরাপদ ও গোপনীয়",
-    "Always Available": "সর্বদা উপলব্ধ",
-    "For All Users": "সকল ব্যবহারকারীর জন্য",
-    "VaxSafe is a student-developed web platform dedicated to empowering Bangladeshi families with accessible vaccination management tools.": "VaxSafe একটি শিক্ষার্থী-নির্মিত প্ল্যাটফর্ম যা বাংলাদেশের পরিবারগুলোকে সহজলভ্য টিকা ব্যবস্থাপনার সুবিধা দেয়।",
-    "Our system simplifies healthcare by offering intelligent scheduling, real-time reminders, and secure tracking for family members of all ages.": "আমাদের সিস্টেম বুদ্ধিমান সময়সূচি ও রিয়েল-টাইম অনুস্মারকের মাধ্যমে স্বাস্থ্যসেবা সহজ করে।",
-    "Deeply integrated with Bangladesh's national immunization calendar, VaxSafe connects you to local health centers to ensure no critical dose is missed.": "জাতীয় টিকাদান ক্যালেন্ডারের সাথে সংযুক্ত, VaxSafe আপনাকে স্থানীয় স্বাস্থ্যকেন্দ্রের সাথে যুক্ত করে।",
-    "We make staying protected as easy as checking your email, contributing to a safer, healthier nation.": "সুরক্ষিত থাকাকে আমরা ইমেইল চেক করার মতোই সহজ করে তুলি।",
-    "We\'d love to hear from you! Send us a message.": "আপনার কাছ থেকে শুনতে চাই! আমাদের বার্তা পাঠান।",
-    "Send Message": "বার্তা পাঠান",
-    "Send": "পাঠান",
-    "Sign In": "প্রবেশ করুন",
-    "Back": "পেছনে যান",
-    "Forgot Password?": "পাসওয়ার্ড ভুলে গেছেন?",
-    "Don\'t have an account?": "অ্যাকাউন্ট নেই?",
-    "Or log in with": "অথবা লগ ইন করুন",
-    "Continue with Google": "Google দিয়ে চালিয়ে যান",
-    "Continue with Facebook": "Facebook দিয়ে চালিয়ে যান",
-    "Create Account": "অ্যাকাউন্ট তৈরি করুন",
-    "Join VaxSafe and protect your family\'s health": "VaxSafe-এ যোগ দিন এবং পরিবারের স্বাস্থ্য রক্ষা করুন",
-    "Back to Home": "হোমে ফিরুন",
-    "Already have an account?": "ইতিমধ্যে অ্যাকাউন্ট আছে?",
-    "Welcome back! Here\'s your health overview": "স্বাগতম! এখানে আপনার স্বাস্থ্য সারসংক্ষেপ",
-    "Upcoming Vaccinations": "আসন্ন টিকাদান",
-    "Reminders Active": "সক্রিয় অনুস্মারক",
     "Family Members": "পরিবারের সদস্য",
-    "No updates available at the moment.": "এই মুহূর্তে কোনো আপডেট নেই।",
-    "Add Vaccine": "টিকা যোগ করুন",
-    "Add Family Member": "সদস্য যোগ করুন",
-    "Member Name": "সদস্যের নাম",
-    "Notification": "বিজ্ঞপ্তি",
-    "No family members added yet.": "এখনো কোনো সদস্য যোগ করা হয়নি।",
-    "Keep track of your family\'s health together": "একসাথে পরিবারের স্বাস্থ্য ট্র্যাক করুন",
-    "Save Member": "সদস্য সংরক্ষণ",
-    "Cancel": "বাতিল",
-    "Add Vaccine Record": "টিকার রেকর্ড যোগ করুন",
-    "Add a new vaccination record for a family member": "পরিবারের সদস্যের জন্য নতুন টিকার রেকর্ড যোগ করুন",
-    "Basic Information": "মৌলিক তথ্য",
-    "Vaccine Type": "টিকার ধরন",
-    "Dose Number": "ডোজ নম্বর",
-    "Date Information": "তারিখের তথ্য",
-    "Date Administered/Scheduled": "প্রদান/নির্ধারিত তারিখ",
-    "Next Dose Date": "পরবর্তী ডোজের তারিখ",
-    "Healthcare Provider": "স্বাস্থ্যসেবা প্রদানকারী",
-    "Additional Details": "অতিরিক্ত বিবরণ",
-    "Vaccination Center/Hospital": "টিকাদান কেন্দ্র/হাসপাতাল",
-    "Batch/Lot Number": "ব্যাচ/লট নম্বর",
-    "Manufacturer": "প্রস্তুতকারক",
-    "Side Effects": "পার্শ্বপ্রতিক্রিয়া",
-    "💾 Save Vaccine Record": "💾 রেকর্ড সংরক্ষণ",
-    "🏥 Vaccination Centers": "🏥 টিকাদান কেন্দ্রসমূহ",
-    "Find nearby vaccination centers in your area": "আপনার এলাকার কাছের টিকাদান কেন্দ্র খুঁজুন",
-    "Centers Available": "টি কেন্দ্র উপলব্ধ",
-    "All Cities": "সকল শহর",
-    "All Vaccines": "সকল টিকা",
-    "Apply Filters": "ফিল্টার প্রয়োগ",
-    "Find Nearest": "নিকটতম খুঁজুন",
-    "Map View": "মানচিত্র দেখুন",
-    "Export List": "তালিকা রপ্তানি",
-    "Verified": "যাচাইকৃত",
-    "View Details": "বিস্তারিত দেখুন",
-    "Get Directions": "দিকনির্দেশনা পান",
-    "No Vaccination Centers Found": "কোনো টিকাদান কেন্দ্র পাওয়া যায়নি",
-    "Reset Filters": "ফিল্টার রিসেট",
-    "24 Hours Open": "২৪ ঘণ্টা খোলা",
-    "My Profile": "আমার প্রোফাইল",
-    "Profile Information": "প্রোফাইল তথ্য",
-    "Not provided": "প্রদান করা হয়নি",
-    "Choose File": "ফাইল বেছে নিন",
-    "No file chosen": "কোনো ফাইল নেই",
-    "Save Changes": "পরিবর্তন সংরক্ষণ",
-    "Delete Photo": "ছবি মুছুন",
-    "📅 Vaccination Schedule": "📅 টিকাদান সময়সূচি",
-    "Manage upcoming doses and health records for your family.": "পরিবারের আসন্ন ডোজ ও স্বাস্থ্য রেকর্ড পরিচালনা করুন।",
-    "Edit List": "তালিকা সম্পাদনা",
-    "Add Reminder": "অনুস্মারক যোগ করুন",
-    "No Records Found": "কোনো রেকর্ড নেই",
-    "Your scheduled vaccinations will appear here.": "নির্ধারিত টিকাদান এখানে দেখাবে।",
-    "New Appointment": "নতুন অ্যাপয়েন্টমেন্ট",
-    "Set a new vaccination reminder": "নতুন টিকাদান অনুস্মারক সেট করুন",
-    "Vaccine Name": "টিকার নাম",
-    "Notify Via": "বিজ্ঞপ্তি মাধ্যম",
-    "Save Schedule": "সময়সূচি সংরক্ষণ",
-    "Completed": "সম্পন্ন",
-    "Pending": "অপেক্ষমাণ",
-    "💉 Vaccination Schedule": "💉 টিকাদান সময়সূচি",
-    "Track and manage your family\'s vaccine records": "পরিবারের টিকার রেকর্ড ট্র্যাক ও পরিচালনা করুন",
     "Add New Vaccine": "নতুন টিকা যোগ করুন",
     "All Status": "সকল অবস্থা",
     "Scheduled": "নির্ধারিত",
@@ -973,55 +744,20 @@ document.addEventListener('DOMContentLoaded', function() {
     "days until": "দিন বাকি",
     "No Vaccine Records Yet": "এখনো কোনো রেকর্ড নেই",
     "Add First Vaccine": "প্রথম টিকা যোগ করুন",
-    "📰 Health News & Updates": "📰 স্বাস্থ্য সংবাদ ও আপডেট",
-    "Stay informed with the latest health and vaccination news": "সর্বশেষ স্বাস্থ্য ও টিকাদান সংবাদ থেকে আপডেট থাকুন",
-    "Total Articles": "মোট নিবন্ধ",
-    "Featured News": "বৈশিষ্ট্যযুক্ত সংবাদ",
-    "Search articles...": "নিবন্ধ খুঁজুন...",
-    "All Categories": "সকল বিভাগ",
-    "Clear Filters": "ফিল্টার মুছুন",
-    "Featured Articles": "বৈশিষ্ট্যযুক্ত নিবন্ধ",
-    "Read More": "আরও পড়ুন",
-    "All Articles": "সকল নিবন্ধ",
-    "No articles found": "কোনো নিবন্ধ নেই",
-    "Back to News": "সংবাদে ফিরুন",
-    "Summary": "সারসংক্ষেপ",
-    "Related Articles": "সম্পর্কিত নিবন্ধ",
-    "Latest Vaccine Updates": "সর্বশেষ টিকা আপডেট",
-    "All News": "সকল সংবাদ",
-    "Add New Update": "নতুন আপডেট",
-    "Search updates...": "আপডেট খুঁজুন...",
-    "No updates found": "কোনো আপডেট নেই",
-    "Back to Updates": "আপডেটে ফিরুন",
-    "Edit Update": "আপডেট সম্পাদনা",
-    "Verify your Email": "ইমেইল যাচাই করুন",
-    "Please enter the OTP sent to your email:": "আপনার ইমেইলে পাঠানো OTP লিখুন:",
-    "Enter OTP": "OTP লিখুন",
-    "Submit": "জমা দিন",
-    "Resend OTP": "OTP পুনরায় পাঠান",
-    "All rights reserved.": "সর্বস্বত্ব সংরক্ষিত।",
     "Filter": "ফিল্টার",
     "Export": "রপ্তানি",
     "Apply": "প্রয়োগ",
     "Status": "অবস্থা",
     "Location": "অবস্থান",
     "Notes": "নোট",
-    "Age": "বয়স",
-    "Date & Time": "তারিখ ও সময়",
-    "📋 Vaccination Schedule": "📋 টিকাদান সময়সূচি",
-    "Manage and track all vaccination records": "সকল টিকাদান রেকর্ড পরিচালনা ও ট্র্যাক করুন",
-    "Scheduled Date": "নির্ধারিত তারিখ",
-    "Administered Date": "প্রদানের তারিখ",
-    "Next Dose": "পরবর্তী ডোজ",
-    "No Vaccine Records Found": "কোনো রেকর্ড পাওয়া যায়নি",
-    "Stay informed about vaccination programs, campaigns and new programmes": "টিকাদান কর্মসূচি সম্পর্কে আপডেট থাকুন",
-    "General Vaccine News": "সাধারণ টিকা সংবাদ",
-    "VaxSafe combines modern technology with local expertise to make family health protection as simple and reliable as checking your email.": "VaxSafe আধুনিক প্রযুক্তি মিলিয়ে পারিবারিক স্বাস্থ্য সুরক্ষা সহজ করে।",
-    "📌 Important Information": "📌 গুরুত্বপূর্ণ তথ্য",
-    "Please ensure all required fields are filled accurately": "অনুগ্রহ করে সকল প্রয়োজনীয় তথ্য সঠিকভাবে পূরণ করুন",
+    "Completed": "সম্পন্ন",
+    "Pending": "অপেক্ষমাণ",
+    "💉 Vaccination Schedule": "💉 টিকাদান সময়সূচি",
+    "Track and manage your family\'s vaccine records": "পরিবারের টিকার রেকর্ড ট্র্যাক ও পরিচালনা করুন",
+    "✅ Mark Done": "✅ সম্পন্ন করুন",
+    "All rights reserved.": "সর্বস্বত্ব সংরক্ষিত।",
   };
 
-  // Build reverse map (bn → en)
   const reverseMap = {};
   for (const [en, bn] of Object.entries(translations)) {
     reverseMap[bn] = en;
@@ -1039,10 +775,8 @@ document.addEventListener('DOMContentLoaded', function() {
         if (en) node.textContent = node.textContent.replace(text, en);
       }
     } else if (node.nodeType === Node.ELEMENT_NODE) {
-      // Skip script, style, input value, select
       const tag = node.tagName.toLowerCase();
       if (['script','style','select'].includes(tag)) return;
-      // Translate placeholder
       if (node.hasAttribute && node.hasAttribute('placeholder')) {
         const ph = node.getAttribute('placeholder');
         if (toBangla && translations[ph]) node.setAttribute('placeholder', translations[ph]);
@@ -1056,18 +790,14 @@ document.addEventListener('DOMContentLoaded', function() {
     localStorage.setItem(LANG_KEY, lang);
     const toBangla = (lang === 'bn');
     document.body.childNodes.forEach(n => translateNode(n, toBangla));
-    // Update all lang buttons label
     document.querySelectorAll('#lang-btn').forEach(btn => {
-      const arrow = btn.querySelector('.dropdown-arrow') ? ' <span class="dropdown-arrow">▼</span>' : '';
       btn.innerHTML = (lang === 'bn' ? 'বাংলা' : 'English') + ' <span class="dropdown-arrow">▼</span>';
     });
-    // highlight active
     document.querySelectorAll('#lang-dropdown li').forEach(li => {
       li.style.fontWeight = '';
     });
   }
 
-  // Override setLanguage globally
   window.setLanguage = function(lang) {
     const code = (lang === 'Bangla' || lang === 'bn') ? 'bn' : 'en';
     applyLanguage(code);
@@ -1079,7 +809,6 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   };
 
-  // Apply saved language on page load
   document.addEventListener('DOMContentLoaded', function () {
     const saved = localStorage.getItem(LANG_KEY);
     if (saved === 'bn') applyLanguage('bn');
