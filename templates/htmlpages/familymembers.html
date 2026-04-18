@@ -8,10 +8,8 @@ Family Members{% endblock %}
 
   <!-- DEBUG INFO -->
   <div style="background: #ffffcc; padding: 10px; margin-bottom: 20px; border: 2px solid #ff0000;">
-
     <p>Logged in as: {{ request.user.username }}</p>
     <p>Members count: {{ members.count }}</p>
-
   </div>
 
   <table>
@@ -22,6 +20,7 @@ Family Members{% endblock %}
         <th>Vaccine</th>
         <th>Date & Time</th>
         <th>Notification</th>
+        <th>Actions</th>
       </tr>
     </thead>
     <tbody>
@@ -36,9 +35,17 @@ Family Members{% endblock %}
         <td>{{ member.vaccine_name }}</td>
         <td>{{ member.date_time }}</td>
         <td>{{ member.notification_type }}</td>
+        <td>
+          <!-- ✅ Vaccine History Button -->
+          <a href="{% url 'vaccine_history' member.id %}"
+             class="history-btn"
+             title="এই সদস্যের Vaccine ইতিহাস দেখুন">
+            📋 Vaccine History
+          </a>
+        </td>
       </tr>
       {% empty %}
-      <tr><td colspan="5">No family members added yet.</td></tr>
+      <tr><td colspan="6">No family members added yet.</td></tr>
       {% endfor %}
     </tbody>
   </table>
@@ -64,6 +71,25 @@ Family Members{% endblock %}
 .family-members th {
   background: #27ADB2;
   color: #fff;
+}
+
+/* ✅ Vaccine History Button Style */
+.history-btn {
+  display: inline-block;
+  padding: 6px 14px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border-radius: 20px;
+  text-decoration: none;
+  font-size: 13px;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  white-space: nowrap;
+}
+.history-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+  color: white;
 }
 </style>
 {% endblock %}
@@ -243,9 +269,10 @@ Family Members{% endblock %}
     "VaxSafe combines modern technology with local expertise to make family health protection as simple and reliable as checking your email.": "VaxSafe আধুনিক প্রযুক্তি মিলিয়ে পারিবারিক স্বাস্থ্য সুরক্ষা সহজ করে।",
     "📌 Important Information": "📌 গুরুত্বপূর্ণ তথ্য",
     "Please ensure all required fields are filled accurately": "অনুগ্রহ করে সকল প্রয়োজনীয় তথ্য সঠিকভাবে পূরণ করুন",
+    "Actions": "অ্যাকশন",
+    "📋 Vaccine History": "📋 টিকার ইতিহাস",
   };
 
-  // Build reverse map (bn → en)
   const reverseMap = {};
   for (const [en, bn] of Object.entries(translations)) {
     reverseMap[bn] = en;
@@ -263,10 +290,8 @@ Family Members{% endblock %}
         if (en) node.textContent = node.textContent.replace(text, en);
       }
     } else if (node.nodeType === Node.ELEMENT_NODE) {
-      // Skip script, style, input value, select
       const tag = node.tagName.toLowerCase();
       if (['script','style','select'].includes(tag)) return;
-      // Translate placeholder
       if (node.hasAttribute && node.hasAttribute('placeholder')) {
         const ph = node.getAttribute('placeholder');
         if (toBangla && translations[ph]) node.setAttribute('placeholder', translations[ph]);
@@ -280,18 +305,14 @@ Family Members{% endblock %}
     localStorage.setItem(LANG_KEY, lang);
     const toBangla = (lang === 'bn');
     document.body.childNodes.forEach(n => translateNode(n, toBangla));
-    // Update all lang buttons label
     document.querySelectorAll('#lang-btn').forEach(btn => {
-      const arrow = btn.querySelector('.dropdown-arrow') ? ' <span class="dropdown-arrow">▼</span>' : '';
       btn.innerHTML = (lang === 'bn' ? 'বাংলা' : 'English') + ' <span class="dropdown-arrow">▼</span>';
     });
-    // highlight active
     document.querySelectorAll('#lang-dropdown li').forEach(li => {
       li.style.fontWeight = '';
     });
   }
 
-  // Override setLanguage globally
   window.setLanguage = function(lang) {
     const code = (lang === 'Bangla' || lang === 'bn') ? 'bn' : 'en';
     applyLanguage(code);
@@ -303,7 +324,6 @@ Family Members{% endblock %}
     }
   };
 
-  // Apply saved language on page load
   document.addEventListener('DOMContentLoaded', function () {
     const saved = localStorage.getItem(LANG_KEY);
     if (saved === 'bn') applyLanguage('bn');
