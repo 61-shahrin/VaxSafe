@@ -24,10 +24,11 @@ urlpatterns = [
     # ─────────────────────────────────────────
     # AUTHENTICATION
     # ─────────────────────────────────────────
-    path('register/', views.register,   name='register'),
-    path('verify/',   views.verify,     name='verify'),
-    path('login/',    views.login_view, name='login'),
-    path('logout/',   views.logout,     name='logout'),
+    path('register/', views.register, name='register'),
+    path('login/', views.login_view, name='login'),
+    path('logout/', views.logout, name='logout'),
+    path('verify-otp/', views.verify_otp, name='verify_otp'),  # ✅ নতুন
+    path('resend-otp/', views.resend_otp, name='resend_otp'),  # ✅ নতুন
 
     # ─────────────────────────────────────────
     # DASHBOARD & PROFILE
@@ -48,7 +49,15 @@ urlpatterns = [
          views.delete_family_member, name='delete_family_member'),
 
     # ─────────────────────────────────────────
-    # VACCINES
+    # VACCINE HISTORY  ✅ নতুন
+    # ─────────────────────────────────────────
+    path('vaccines/history/',
+         views.vaccine_history,      name='vaccine_history_self'),          # নিজের
+    path('vaccines/history/<int:member_id>/',
+         views.vaccine_history,      name='vaccine_history'),               # family member এর
+
+    # ─────────────────────────────────────────
+    # VACCINES  (Admin Only for add/edit/delete)
     # ─────────────────────────────────────────
     path('vaccines/',
          views.vaccine_list,          name='vaccine_list'),
@@ -68,6 +77,12 @@ urlpatterns = [
          views.delete_vaccine,        name='delete_vaccine'),
 
     # ─────────────────────────────────────────
+    # MARK COMPLETED  ✅ নতুন (Admin Quick Action)
+    # ─────────────────────────────────────────
+    path('vaccines/<int:vaccine_id>/complete/',
+         views.mark_vaccine_completed, name='mark_vaccine_completed'),
+
+    # ─────────────────────────────────────────
     # REMINDERS (পুরনো Reminder model)
     # ─────────────────────────────────────────
     path('reminders/add/',  views.add_reminder,  name='add_reminder'),
@@ -75,29 +90,31 @@ urlpatterns = [
 
     # ─────────────────────────────────────────
     # VACCINE REMINDERS (নতুন VaccineReminder model)
+    # reminder_list  → User শুধু দেখতে পারবে
+    # set_reminder   → Admin Only: যেকোনো user এর জন্য set করো
     # ─────────────────────────────────────────
     path('reminders/',
-         views.reminder_list,   name='reminder_list'),
+         views.reminder_list,    name='reminder_list'),
     path('reminders/set/',
-         views.set_reminder,    name='set_reminder'),
+         views.set_reminder,     name='set_reminder'),          # ✅ Admin Only
     path('reminders/delete/<int:pk>/',
-         views.delete_reminder, name='delete_reminder'),
+         views.delete_reminder,  name='delete_reminder'),
 
     # ─────────────────────────────────────────
     # NOTIFICATIONS
     # ─────────────────────────────────────────
     path('notifications/',
-         views.notification_list,        name='notification_list'),
+         views.notification_list,   name='notification_list'),
     path('notifications/delete/<int:pk>/',
-         views.delete_notification,      name='delete_notification'),
+         views.delete_notification, name='delete_notification'),
 
     # ─────────────────────────────────────────
     # VACCINATION CENTERS
     # ─────────────────────────────────────────
     path('centers/',
-         views.centers,                  name='centers'),
+         views.centers,       name='centers'),
     path('centers/<int:center_id>/',
-         views.center_detail,            name='center_detail'),
+         views.center_detail, name='center_detail'),
 
     # ─────────────────────────────────────────
     # NEWS
@@ -111,13 +128,13 @@ urlpatterns = [
     # VACCINE UPDATES
     # ─────────────────────────────────────────
     path('vaccine-updates/',
-         views.vaccine_updates,        name='vaccine_updates'),
+         views.vaccine_updates,       name='vaccine_updates'),
     path('vaccine-updates/create/',
-         views.create_vaccine_update,  name='create_vaccine_update'),
+         views.create_vaccine_update, name='create_vaccine_update'),
     path('vaccine-updates/<int:pk>/',
-         views.vaccine_update_detail,  name='vaccine_update_detail'),
+         views.vaccine_update_detail, name='vaccine_update_detail'),
     path('vaccine-updates/<int:pk>/edit/',
-         views.edit_vaccine_update,    name='edit_vaccine_update'),
+         views.edit_vaccine_update,   name='edit_vaccine_update'),
 
     # ─────────────────────────────────────────
     # FAMILY GROUPS
@@ -136,7 +153,6 @@ urlpatterns = [
          views.switch_family_view,     name='switch_family'),
     path('family/upgrade/<int:pk>/',
          views.dependent_upgrade_view, name='dependent_upgrade'),
-    path('reminder/', views.reminder, name='reminder'),
 ]
 
 if settings.DEBUG:
