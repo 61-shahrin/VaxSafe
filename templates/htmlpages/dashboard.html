@@ -20,7 +20,7 @@
       <div class="card-arrow">→</div>
     </div>
 
-    <div class="card card-2" data-url="{% url 'reminder' %}">
+<div class="card card-2" data-url="{% url 'reminder_list' %}">
       <div class="icon-circle">
         <i class="fa fa-bell"></i>
       </div>
@@ -69,12 +69,29 @@
 
   <!-- Action Buttons -->
   <div class="action-buttons">
-    <a class="btn-action btn-primary" href="{% url 'add_vaccine' %}">
-      <i class="fa fa-plus-circle"></i> Add Vaccine
-    </a>
-    <a class="btn-action btn-secondary" href="{% url 'addfamilymember' %}">
-      <i class="fa fa-user-plus"></i> Add Family Member
-    </a>
+    {% if user.is_staff or user.is_superuser %}
+      <!-- Admin এর জন্য সব button -->
+      <a class="btn-action btn-primary" href="{% url 'add_vaccine' %}">
+        <i class="fa fa-plus-circle"></i> Add Vaccine (Admin)
+      </a>
+      <a class="btn-action btn-warning" href="{% url 'set_reminder' %}">
+        <i class="fa fa-bell"></i> Set Reminder (Admin)
+      </a>
+      <a class="btn-action btn-secondary" href="{% url 'addfamilymember' %}">
+        <i class="fa fa-user-plus"></i> Add Family Member
+      </a>
+    {% else %}
+      <!-- User এর জন্য শুধু Family Member add -->
+      <a class="btn-action btn-secondary" href="{% url 'addfamilymember' %}">
+        <i class="fa fa-user-plus"></i> Add Family Member
+      </a>
+      <a class="btn-action btn-info" href="{% url 'vaccine_schedule' %}">
+        <i class="fa fa-calendar"></i> আমার Vaccine Schedule
+      </a>
+      <a class="btn-action btn-info" href="{% url 'reminder_list' %}">
+        <i class="fa fa-bell"></i> আমার Reminders
+      </a>
+    {% endif %}
   </div>
 </div>
 
@@ -323,6 +340,27 @@
 .btn-secondary:hover {
   transform: translateY(-3px);
   box-shadow: 0 6px 20px rgba(250, 112, 154, 0.4);
+}
+
+/* ✅ নতুন button styles */
+.btn-warning {
+  background: linear-gradient(135deg, #f39c12 0%, #e67e22 100%);
+  color: white;
+}
+
+.btn-warning:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 6px 20px rgba(243, 156, 18, 0.4);
+}
+
+.btn-info {
+  background: linear-gradient(135deg, #00b894 0%, #00cec9 100%);
+  color: white;
+}
+
+.btn-info:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 6px 20px rgba(0, 184, 148, 0.4);
 }
 
 /* ============================================
@@ -635,11 +673,6 @@ document.querySelectorAll('.card').forEach(card => {
   });
 })();
 </script>
-
-
-
-
-
 
 
 <!-- ✅ userprofile → profile -->
