@@ -6,15 +6,16 @@ from django.core.exceptions import ValidationError
 from .models import (
     Profile, FamilyMember, Vaccine, Reminder,
     FamilyGroup, FamilyGroupMember, FamilyInvitation,
-    VaccineReminder,
-    VaccineSchedule,   # ← এটা যোগ করো
+    VaccineReminder, VaccineSchedule,
+    VaccineRequest,   # ✅ FIXED: import যোগ করা হয়েছে
 )
+
+
 # ============================================================
 # PROFILE FORM
 # ============================================================
 
 class ProfileForm(forms.ModelForm):
-    # ✅ User model এর email field (profile model এ নেই, তাই extra field)
     email = forms.EmailField(
         required=False,
         widget=forms.EmailInput(attrs={
@@ -25,8 +26,10 @@ class ProfileForm(forms.ModelForm):
     )
 
     class Meta:
-        model = Profile
-        fields = ['mobile', 'gender', 'date_of_birth', 'profession', 'address', 'blood_group', 'photo']
+        model  = Profile
+        # ✅ FIXED: 'area' field যোগ করা হয়েছে
+        fields = ['mobile', 'gender', 'date_of_birth', 'profession',
+                  'address', 'blood_group', 'photo', 'area']
         widgets = {
             'mobile': forms.TextInput(attrs={
                 'class': 'form-control', 'placeholder': 'Enter mobile number',
@@ -46,15 +49,21 @@ class ProfileForm(forms.ModelForm):
                 'class': 'form-control', 'placeholder': 'e.g., A+, O-, AB+',
             }),
             'photo': forms.FileInput(attrs={'class': 'form-control', 'accept': 'image/*'}),
+            # ✅ FIXED: area widget যোগ করা হয়েছে
+            'area': forms.Select(attrs={'class': 'form-control'}),
         }
         labels = {
-            'mobile': 'Mobile Number', 'gender': 'Gender',
-            'date_of_birth': 'Date of Birth', 'profession': 'Profession',
-            'address': 'Address', 'blood_group': 'Blood Group', 'photo': 'Profile Photo',
+            'mobile':        'Mobile Number',
+            'gender':        'Gender',
+            'date_of_birth': 'Date of Birth',
+            'profession':    'Profession',
+            'address':       'Address',
+            'blood_group':   'Blood Group',
+            'photo':         'Profile Photo',
+            'area':          'আপনার এলাকা',   # ✅ FIXED
         }
 
     def __init__(self, *args, **kwargs):
-        # ✅ user instance নিয়ে email field populate করো
         user = kwargs.pop('user', None)
         super().__init__(*args, **kwargs)
         if user:
@@ -77,13 +86,14 @@ class ProfileForm(forms.ModelForm):
             return blood_group.upper()
         return blood_group
 
+
 # ============================================================
 # FAMILY MEMBER FORM
 # ============================================================
 
 class FamilyMemberForm(forms.ModelForm):
     class Meta:
-        model = FamilyMember
+        model  = FamilyMember
         fields = [
             'name', 'age', 'date_of_birth', 'gender',
             'relation', 'blood_group',
@@ -100,7 +110,7 @@ class FamilyMemberForm(forms.ModelForm):
                 'class': 'form-control', 'type': 'date',
                 'max': timezone.now().date().isoformat()
             }),
-            'gender': forms.Select(attrs={'class': 'form-control'}),
+            'gender':   forms.Select(attrs={'class': 'form-control'}),
             'relation': forms.Select(attrs={'class': 'form-control', 'required': True}),
             'blood_group': forms.TextInput(attrs={
                 'class': 'form-control', 'placeholder': 'e.g., A+, O-',
@@ -151,7 +161,7 @@ class FamilyMemberForm(forms.ModelForm):
 
 class VaccineForm(forms.ModelForm):
     class Meta:
-        model = Vaccine
+        model  = Vaccine
         fields = [
             'family_member', 'name', 'dose_number', 'manufacturer',
             'batch_number', 'date_administered', 'next_dose_date',
@@ -184,7 +194,6 @@ class VaccineForm(forms.ModelForm):
         self.user = kwargs.pop('user', None)
         super().__init__(*args, **kwargs)
 
-        # ✅ Dynamic vaccine choices: hardcoded + custom types
         from .models import CustomVaccineType
         custom_choices = [
             (ct.name, ct.name)
@@ -246,7 +255,7 @@ class VaccineForm(forms.ModelForm):
 
 class ReminderForm(forms.ModelForm):
     class Meta:
-        model = Reminder
+        model  = Reminder
         fields = ['vaccine_name', 'scheduled_datetime', 'family_member']
         widgets = {
             'vaccine_name': forms.TextInput(attrs={
@@ -273,7 +282,7 @@ class ReminderForm(forms.ModelForm):
 
 
 # ============================================================
-# VACCINE APPLICATION FORM  (User শুধু এটাই ব্যবহার করবে)
+# VACCINE APPLICATION FORM
 # ============================================================
 
 class VaccineApplicationForm(forms.ModelForm):
@@ -318,13 +327,14 @@ class VaccineApplicationForm(forms.ModelForm):
         for f in ['family_member', 'location', 'healthcare_provider', 'notes']:
             self.fields[f].required = False
 
+
 # ============================================================
 # FAMILY GROUP FORMS
 # ============================================================
 
 class FamilyCreateForm(forms.ModelForm):
     class Meta:
-        model = FamilyGroup
+        model  = FamilyGroup
         fields = ['family_name']
         widgets = {
             'family_name': forms.TextInput(attrs={
@@ -359,7 +369,7 @@ class AdminTransferForm(forms.Form):
 
 
 # ============================================================
-# ✅ VACCINE REMINDER FORM  (নতুন — সঠিক জায়গায়)
+# VACCINE REMINDER FORM
 # ============================================================
 
 class VaccineReminderForm(forms.ModelForm):
@@ -368,7 +378,7 @@ class VaccineReminderForm(forms.ModelForm):
         fields = ['vaccine_name', 'reminder_date', 'reminder_time', 'note']
         widgets = {
             'vaccine_name': forms.TextInput(attrs={
-                'class': 'form-control',
+                'class':       'form-control',
                 'placeholder': 'ভ্যাকসিনের নাম লিখুন'
             }),
             'reminder_date': forms.DateInput(attrs={
@@ -400,4 +410,72 @@ class VaccineReminderForm(forms.ModelForm):
         date = self.cleaned_data.get('reminder_date')
         if date and date < timezone.now().date():
             raise ValidationError('রিমাইন্ডারের তারিখ অবশ্যই ভবিষ্যতে হতে হবে।')
+        return date
+
+
+# ============================================================
+# ✅ FIXED: VACCINE REQUEST FORM  (top-level — VaccineReminderForm এর বাইরে)
+# ============================================================
+
+class VaccineRequestForm(forms.ModelForm):
+    class Meta:
+        model  = VaccineRequest
+        fields = [
+            'family_member', 'vaccine_name',
+            'preferred_date', 'preferred_center', 'note',
+        ]
+        widgets = {
+            'family_member': forms.Select(attrs={
+                'class': 'form-control'
+            }),
+            'vaccine_name': forms.Select(attrs={
+                'class': 'form-control'
+            }),
+            'preferred_date': forms.DateInput(attrs={
+                'class': 'form-control',
+                'type':  'date',
+            }),
+            'preferred_center': forms.TextInput(attrs={
+                'class':       'form-control',
+                'placeholder': 'যেমন: ঢাকা মেডিকেল, Farmgate Health Center (ঐচ্ছিক)',
+            }),
+            'note': forms.Textarea(attrs={
+                'class':       'form-control',
+                'rows':        3,
+                'placeholder': 'অতিরিক্ত তথ্য বা অনুরোধ লিখুন (ঐচ্ছিক)',
+            }),
+        }
+        labels = {
+            'family_member':   'কার জন্য? (নিজের জন্য ফাঁকা রাখুন)',
+            'vaccine_name':    'ভ্যাকসিনের নাম',
+            'preferred_date':  'পছন্দের তারিখ',
+            'preferred_center':'কেন্দ্রের নাম (ঐচ্ছিক)',
+            'note':            'নোট / বিশেষ অনুরোধ',
+        }
+
+    def __init__(self, *args, **kwargs):
+        self.user = kwargs.pop('user', None)
+        super().__init__(*args, **kwargs)
+
+        self.fields['vaccine_name'].widget = forms.Select(
+            attrs={'class': 'form-control'},
+            choices=[('', '— ভ্যাকসিন সিলেক্ট করুন —')] + list(Vaccine.VACCINE_TYPES)
+        )
+        self.fields['vaccine_name'].choices = (
+            [('', '— ভ্যাকসিন সিলেক্ট করুন —')] + list(Vaccine.VACCINE_TYPES)
+        )
+
+        if self.user:
+            self.fields['family_member'].queryset = FamilyMember.objects.filter(
+                user=self.user
+            ).order_by('name')
+            self.fields['family_member'].empty_label = "নিজের জন্য (Self)"
+
+        for f in ['family_member', 'preferred_center', 'note']:
+            self.fields[f].required = False
+
+    def clean_preferred_date(self):
+        date = self.cleaned_data.get('preferred_date')
+        if date and date < timezone.now().date():
+            raise ValidationError('পছন্দের তারিখ অবশ্যই ভবিষ্যতে হতে হবে।')
         return date
