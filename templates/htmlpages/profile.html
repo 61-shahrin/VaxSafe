@@ -1,4 +1,5 @@
 {% extends 'base_log.html' %}
+{% block body_class %}page-profile{% endblock %}
 {% block title %}My Profile - VaxSafe{% endblock %}
 {% load static %}
 
@@ -33,6 +34,13 @@
         </div>
       </div>
 
+      <!-- Email Field — form-fields div এর সবার উপরে -->
+      <div class="form-row">
+        <div class="form-group">
+          <label for="id_email">Email Address:</label>
+          {{ form.email }}
+          </div>
+       </div>
       <!-- Form Fields -->
       <div class="form-fields">
         <div class="form-row">
@@ -71,6 +79,15 @@
             <label for="id_blood_group">Blood Group:</label>
             {{ form.blood_group }}
           </div>
+
+                  <!-- ✅ ETA ADD KORO -->
+        <div class="form-row">
+          <div class="form-group">
+            <label for="id_area">আপনার এলাকা:</label>
+            {{ form.area }}
+          </div>
+        </div>
+
         </div>
       </div>
 
@@ -100,7 +117,7 @@
 
         <div class="info-row">
           <span class="label">Email:</span>
-          <span class="value">{{ request.user.email }}</span>
+          <span class="value">{{ request.user.email|default:"Not provided" }}</span>
         </div>
 
         <div class="info-row">
@@ -138,6 +155,13 @@
           <span class="label">Blood Group:</span>
           <span class="value">{{ profile.blood_group|default:"Not provided" }}</span>
         </div>
+
+        <!-- ✅ ETA ADD KORO -->
+        <div class="info-row">
+          <span class="label">এলাকা:</span>
+          <span class="value">{{ profile.area|default:"Not provided" }}</span>
+        </div>
+
       </div>
     </div>
   </div>
