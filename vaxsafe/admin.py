@@ -9,14 +9,16 @@ from .models import (
     VaccinationCenter, News, VaccineUpdate,
     Notification, VaccineReminder,
     VaccineSchedule, CustomVaccineType,
+    # ✅ FIXED: এই দুটো import যোগ করা হয়েছে
+    AreaAdmin, VaccineRequest,
 )
 
+
 # =====================================================================
-# 🔔  MODULE-LEVEL NOTIFICATION HELPERS
+# MODULE-LEVEL NOTIFICATION HELPER
 # =====================================================================
 
 def _notify(user, title, msg, notif_type='reminder', send_email=True):
-    """App Notification তৈরি করো + Email পাঠাও।"""
     Notification.objects.create(
         user=user, title=title, message=msg, notif_type=notif_type
     )
@@ -62,16 +64,18 @@ class UpdateAdmin(admin.ModelAdmin):
 
 @admin.register(Profile)
 class ProfileAdmin(admin.ModelAdmin):
-    list_display    = ['user', 'get_full_name', 'mobile', 'gender', 'blood_group']
-    list_filter     = ['gender', 'blood_group']
+    list_display    = ['user', 'get_full_name', 'mobile', 'gender', 'blood_group', 'area']
+    list_filter     = ['gender', 'blood_group', 'area']
     search_fields   = ['user__username', 'user__email', 'user__first_name', 'mobile']
     readonly_fields = ['user']
 
     fieldsets = (
-        ('User Account',          {'fields': ('user',)}),
-        ('Personal Information',  {'fields': ('mobile', 'gender', 'date_of_birth', 'blood_group')}),
-        ('Professional',          {'fields': ('profession', 'address')}),
-        ('Profile Photo',         {'fields': ('photo',)}),
+        ('User Account',         {'fields': ('user',)}),
+        ('Personal Information', {'fields': ('mobile', 'gender', 'date_of_birth', 'blood_group')}),
+        ('Professional',         {'fields': ('profession', 'address')}),
+        # ✅ FIXED: area field fieldset এ যোগ করা হয়েছে
+        ('Area / Location',      {'fields': ('area',)}),
+        ('Profile Photo',        {'fields': ('photo',)}),
     )
 
     def get_full_name(self, obj):
@@ -101,12 +105,12 @@ class FamilyMemberAdmin(admin.ModelAdmin):
         count = obj.vaccines.count()
         if count > 0:
             return format_html('<span style="color:green;font-weight:bold;">{} vaccines</span>', count)
-        return format_html('<span style="color:gray;">No vaccines</span>')
+        return mark_safe('<span style="color:gray;">No vaccines</span>')
     vaccine_count_display.short_description = 'Vaccines'
 
 
 # =====================================================================
-# VACCINE ADMIN  ← 🔔 MAJOR CHANGE: save_model এ auto-notification
+# VACCINE ADMIN
 # =====================================================================
 
 def _build_vaccine_completed_msg(vaccine):
@@ -144,12 +148,8 @@ class VaccineAdmin(admin.ModelAdmin):
         ('Metadata',             {'fields': ('created_at', 'updated_at'), 'classes': ('collapse',)}),
     )
 
-    # ------------------------------------------------------------------
-    # 🔔  AUTO NOTIFICATION ON SAVE
-    # ------------------------------------------------------------------
-
     def save_model(self, request, obj, form, change):
-        is_new = not change
+        is_new     = not change
         old_status = None
         if change and obj.pk:
             try:
@@ -177,10 +177,6 @@ class VaccineAdmin(admin.ModelAdmin):
             _notify(obj.user, title, msg, notif_type='update')
             self.message_user(request, f"✅ '{obj.name}' Completed। {obj.user.username} কে Notification পাঠানো হয়েছে।")
 
-    # ------------------------------------------------------------------
-    # 🔔  BULK ACTION: Mark Selected Completed
-    # ------------------------------------------------------------------
-
     @admin.action(description='✅ Selected vaccines → Completed করো ও Notification পাঠাও')
     def action_mark_completed(self, request, queryset):
         updated = 0
@@ -197,10 +193,6 @@ class VaccineAdmin(admin.ModelAdmin):
             f"✅ {updated} টি vaccine Completed করা হয়েছে। "
             f"সকল user কে Notification ও Email পাঠানো হয়েছে।"
         )
-
-    # ------------------------------------------------------------------
-    # Display helpers
-    # ------------------------------------------------------------------
 
     def get_recipient(self, obj):
         return obj.get_recipient_name()
@@ -258,18 +250,18 @@ class VaccinationCenterAdmin(admin.ModelAdmin):
     date_hierarchy  = 'created_at'
 
     fieldsets = (
-        ('Center Information',      {'fields': ('name', 'address', 'city', 'is_active', 'is_verified', 'rating')}),
-        ('Contact Information',     {'fields': ('phone', 'email')}),
-        ('Operating Hours',         {'fields': ('opening_time', 'closing_time')}),
-        ('Services',                {'fields': ('available_vaccines', 'description')}),
-        ('Location (Google Maps)',  {'fields': ('latitude', 'longitude', 'website'), 'classes': ('collapse',)}),
-        ('Metadata',                {'fields': ('created_at', 'updated_at'), 'classes': ('collapse',)}),
+        ('Center Information',     {'fields': ('name', 'address', 'city', 'is_active', 'is_verified', 'rating')}),
+        ('Contact Information',    {'fields': ('phone', 'email')}),
+        ('Operating Hours',        {'fields': ('opening_time', 'closing_time')}),
+        ('Services',               {'fields': ('available_vaccines', 'description')}),
+        ('Location (Google Maps)', {'fields': ('latitude', 'longitude', 'website'), 'classes': ('collapse',)}),
+        ('Metadata',               {'fields': ('created_at', 'updated_at'), 'classes': ('collapse',)}),
     )
 
     def active_status(self, obj):
         if obj.is_active:
-            return format_html('<span style="color:green;font-weight:bold;">✓ Active</span>')
-        return format_html('<span style="color:red;font-weight:bold;">✗ Inactive</span>')
+            return mark_safe('<span style="color:green;font-weight:bold;">✓ Active</span>')
+        return mark_safe('<span style="color:red;font-weight:bold;">✗ Inactive</span>')
     active_status.short_description = 'Status'
 
 
@@ -297,13 +289,13 @@ class NewsAdmin(admin.ModelAdmin):
 
     def published_status(self, obj):
         if obj.is_published:
-            return format_html('<span style="color:green;font-weight:bold;">✓ Published</span>')
-        return format_html('<span style="color:orange;font-weight:bold;">✎ Draft</span>')
+            return mark_safe('<span style="color:green;font-weight:bold;">✓ Published</span>')
+        return mark_safe('<span style="color:orange;font-weight:bold;">✎ Draft</span>')
     published_status.short_description = 'Published'
 
     def featured_badge(self, obj):
         if obj.is_featured:
-            return format_html('<span style="color:goldenrod;font-weight:bold;">★ Featured</span>')
+            return mark_safe('<span style="color:goldenrod;font-weight:bold;">★ Featured</span>')
         return '-'
     featured_badge.short_description = 'Featured'
 
@@ -362,14 +354,14 @@ class NotificationAdmin(admin.ModelAdmin):
 
 
 # =====================================================================
-# VACCINE REMINDER ADMIN  ← 🔔 MAJOR CHANGE: save_model এ auto-notification
+# VACCINE REMINDER ADMIN
 # =====================================================================
 
 @admin.register(VaccineReminder)
 class VaccineReminderAdmin(admin.ModelAdmin):
-    list_display = ['user', 'get_recipient_display', 'vaccine_name',
-                    'reminder_date', 'reminder_time', 'is_sent', 'created_at']
-    list_filter  = ['is_sent', 'reminder_date']
+    list_display  = ['user', 'get_recipient_display', 'vaccine_name',
+                     'reminder_date', 'reminder_time', 'is_sent', 'created_at']
+    list_filter   = ['is_sent', 'reminder_date']
     search_fields = ['user__username', 'vaccine_name', 'family_member__name']
     readonly_fields = ['created_at']
 
@@ -401,7 +393,7 @@ class VaccineReminderAdmin(admin.ModelAdmin):
 
 
 # =====================================================================
-# VACCINE SCHEDULE ADMIN  (Admin-only)
+# VACCINE SCHEDULE ADMIN
 # =====================================================================
 
 @admin.register(VaccineSchedule)
@@ -418,7 +410,7 @@ class VaccineScheduleAdmin(admin.ModelAdmin):
 
     def interval_days_display(self, obj):
         if obj.interval_days == 0:
-            return format_html('<span style="color:gray;">শেষ ডোজ</span>')
+            return mark_safe('<span style="color:gray;">শেষ ডোজ</span>')
         return format_html(
             '<span style="color:blue;font-weight:bold;">{} দিন পর</span>', obj.interval_days
         )
@@ -428,6 +420,123 @@ class VaccineScheduleAdmin(admin.ModelAdmin):
         if not change:
             obj.created_by = request.user
         super().save_model(request, obj, form, change)
+
+
+# =====================================================================
+# ✅ FIXED: AREA ADMIN  (import ঠিক হয়েছে — এখন কাজ করবে)
+# =====================================================================
+
+@admin.register(AreaAdmin)
+class AreaAdminAdmin(admin.ModelAdmin):
+    list_display  = ['admin_user', 'area', 'phone', 'is_active', 'created_at']
+    list_filter   = ['area', 'is_active']
+    search_fields = ['admin_user__username', 'admin_user__email', 'area']
+
+    fieldsets = (
+        ('Admin Info', {
+            'fields': ('admin_user', 'area', 'phone', 'is_active')
+        }),
+    )
+
+    def save_model(self, request, obj, form, change):
+        obj.admin_user.is_staff = True
+        obj.admin_user.save(update_fields=['is_staff'])
+        super().save_model(request, obj, form, change)
+        self.message_user(
+            request,
+            f"✅ {obj.admin_user.username} কে '{obj.area}' এর Admin করা হয়েছে। "
+            f"User টি এখন Staff হয়ে গেছে।"
+        )
+
+
+# =====================================================================
+# ✅ FIXED: VACCINE REQUEST ADMIN  (import ঠিক হয়েছে — এখন কাজ করবে)
+# =====================================================================
+
+@admin.register(VaccineRequest)
+class VaccineRequestAdmin(admin.ModelAdmin):
+    list_display  = ['get_recipient', 'vaccine_name', 'user', 'preferred_date',
+                     'status_badge', 'assigned_admin', 'created_at']
+    list_filter   = ['status', 'vaccine_name', 'created_at']
+    search_fields = ['user__username', 'vaccine_name', 'family_member__name']
+    readonly_fields = ['created_at', 'updated_at', 'get_user_area_display']
+    date_hierarchy  = 'created_at'
+    actions         = ['action_approve_requests', 'action_reject_requests']
+
+    fieldsets = (
+        ('Request Info', {
+            'fields': ('user', 'family_member', 'vaccine_name',
+                       'preferred_date', 'preferred_center', 'note', 'get_user_area_display')
+        }),
+        ('Assignment & Status', {
+            'fields': ('assigned_admin', 'status', 'admin_note')
+        }),
+        ('Metadata', {
+            'fields': ('created_at', 'updated_at'), 'classes': ('collapse',)
+        }),
+    )
+
+    def get_queryset(self, request):
+        qs = super().get_queryset(request)
+        if request.user.is_superuser:
+            return qs
+        return qs.filter(assigned_admin=request.user)
+
+    def get_recipient(self, obj):
+        return obj.get_recipient_name()
+    get_recipient.short_description = 'Recipient'
+
+    def get_user_area_display(self, obj):
+        try:
+            return obj.user.profile.area or 'Not set'
+        except Exception:
+            return 'N/A'
+    get_user_area_display.short_description = "User's Area"
+
+    def status_badge(self, obj):
+        colors = {
+            'Pending':  'orange',
+            'Approved': 'green',
+            'Rejected': 'red',
+        }
+        return format_html(
+            '<span style="color:{};font-weight:bold;">{}</span>',
+            colors.get(obj.status, 'black'), obj.status
+        )
+    status_badge.short_description = 'Status'
+
+    @admin.action(description='✅ Selected requests → Approve ও Vaccine তৈরি করো')
+    def action_approve_requests(self, request, queryset):
+        approved = 0
+        for vr in queryset.filter(status='Pending'):
+            vr.status = 'Approved'
+            vr.save()
+            Vaccine.objects.create(
+                user              = vr.user,
+                family_member     = vr.family_member,
+                name              = vr.vaccine_name,
+                dose_number       = '1st',
+                date_administered = vr.preferred_date,
+                location          = vr.preferred_center or '',
+                status            = 'Scheduled',
+                notes             = 'Admin bulk approve থেকে।',
+            )
+            Notification.objects.create(
+                user       = vr.user,
+                title      = f"✅ টিকা Request Approved: {vr.vaccine_name}",
+                message    = (
+                    f"আপনার '{vr.vaccine_name}' টিকার request approve হয়েছে!\n"
+                    f"📅 তারিখ: {vr.preferred_date.strftime('%d %B %Y')}"
+                ),
+                notif_type = 'update',
+            )
+            approved += 1
+        self.message_user(request, f"✅ {approved} টি request approved।")
+
+    @admin.action(description='❌ Selected requests → Reject করো')
+    def action_reject_requests(self, request, queryset):
+        rejected = queryset.filter(status='Pending').update(status='Rejected')
+        self.message_user(request, f"❌ {rejected} টি request rejected।")
 
 
 # =====================================================================
