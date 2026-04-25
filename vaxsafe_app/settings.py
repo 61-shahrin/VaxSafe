@@ -34,7 +34,6 @@ MIDDLEWARE = [
 
 ROOT_URLCONF = 'vaxsafe_app.urls'
 
-# ✅ TEMPLATES - সঠিকভাবে fix করা হয়েছে
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
@@ -46,8 +45,9 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
-                # ✅ Navbar notification এর জন্য
-                'vaxsafe.context_processors.unread_notifications',
+                # ✅ FIXED: সঠিক function নাম — context_processors.py তে
+                # def unread_notifications(request): return {...}
+                'vaxsafe.context_processors.notifications_processor',
             ],
         },
     },
@@ -62,16 +62,13 @@ DATABASES = {
     }
 }
 
-# ✅ Password validators বন্ধ — আমরা manually করবো
 AUTH_PASSWORD_VALIDATORS = []
 
-# Internationalization
 LANGUAGE_CODE = 'en-us'
 TIME_ZONE = 'Asia/Dhaka'
 USE_I18N = True
 USE_TZ = True
 
-# Static & Media
 STATIC_URL = '/static/'
 STATICFILES_DIRS = [BASE_DIR / "static"]
 STATIC_ROOT = BASE_DIR / 'staticfiles'
@@ -81,23 +78,19 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-# Auth
 LOGIN_URL = '/login/'
 LOGIN_REDIRECT_URL = '/dashboard/'
 LOGOUT_REDIRECT_URL = '/'
 
-# Email (development)
 EMAIL_BACKEND     = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST        = 'smtp.gmail.com'
 EMAIL_PORT        = 587
 EMAIL_USE_TLS     = True
 EMAIL_HOST_USER   = os.getenv('EMAIL_HOST_USER', 'lemonahmed160@gmail.com')
-EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD','cwzi fnps irnr hyew')
+EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD', 'cwzi fnps irnr hyew')
 DEFAULT_FROM_EMAIL = os.getenv('EMAIL_HOST_USER', 'lemonahmed160@gmail.com')
 
-# Session
 SESSION_COOKIE_AGE = 86400
 SESSION_EXPIRE_AT_BROWSER_CLOSE = False
 
 GOOGLE_MAPS_API_KEY = os.getenv('GOOGLE_MAPS_API_KEY')
-
