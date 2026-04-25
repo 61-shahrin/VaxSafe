@@ -7,30 +7,171 @@
   </div>
 
   <ul class="nav-links">
-    <li><a href="{% url 'dashboard' %}" class="nav-btn nav-btn-1">Dashboard</a></li>
+    <li><a href="{% url 'dashboard' %}"       class="nav-btn nav-btn-1">Dashboard</a></li>
     <li><a href="{% url 'vaccine_schedule' %}" class="nav-btn nav-btn-2">Schedule</a></li>
-    <li><a href="{% url 'centers' %}" class="nav-btn nav-btn-3">Centers</a></li>
-    <li><a href="{% url 'news_list' %}" class="nav-btn nav-btn-4">News</a></li>
+    <li><a href="{% url 'centers' %}"          class="nav-btn nav-btn-3">Centers</a></li>
+    <li><a href="{% url 'news_list' %}"         class="nav-btn nav-btn-4">News</a></li>
 
+    <!-- ✅ নতুন: Vaccine Request (User দেখবে) -->
+    {% if not request.user.is_staff and not request.user.is_superuser %}
+    <li>
+      <a href="{% url 'submit_vaccine_request' %}" class="nav-btn nav-btn-req"
+         title="টিকার জন্য Request করুন">
+        💉 Request
+      </a>
+    </li>
+    {% endif %}
+
+    <!-- ✅ নতুন: Vaccine Requests (Admin দেখবে) -->
+    {% if request.user.is_staff or request.user.is_superuser %}
+    <li>
+      <a href="{% url 'admin_vaccine_requests' %}" class="nav-btn nav-btn-req"
+         style="position:relative;" title="Pending Vaccine Requests">
+        📋 Requests
+        {% if pending_request_count > 0 %}
+          <span style="
+            position: absolute; top: -6px; right: -6px;
+            background: #e53935; color: white;
+            border-radius: 50%; font-size: 10px; font-weight: 700;
+            width: 18px; height: 18px;
+            display: flex; align-items: center; justify-content: center;
+          ">{{ pending_request_count }}</span>
+        {% endif %}
+      </a>
+    </li>
+    {% endif %}
+
+    <!-- ✅ NOTIFICATION BELL (nav_two তে যোগ করা হয়েছে) -->
+    <li class="notif-menu" style="position:relative; display:inline-block;">
+      <button class="nav-btn nav-btn-bell" id="notifToggle2"
+              onclick="toggleNotifDropdown2(event)" style="position:relative;">
+        🔔
+        {% if unread_notif_count > 0 %}
+          <span style="
+            position: absolute; top: -5px; right: -5px;
+            background: #e53935; color: white;
+            border-radius: 50%; font-size: 10px; font-weight: 700;
+            width: 18px; height: 18px;
+            display: flex; align-items: center; justify-content: center;
+            line-height: 1;
+          ">{{ unread_notif_count }}</span>
+        {% endif %}
+      </button>
+
+      <!-- Notification Dropdown -->
+      <div id="notifDropdown2" style="
+        display: none;
+        position: absolute;
+        right: 0; top: 110%;
+        width: 300px;
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 8px 30px rgba(0,0,0,0.18);
+        z-index: 9999;
+        overflow: hidden;
+        border: 1px solid #e0e0e0;
+      ">
+        <!-- Header -->
+        <div style="
+          background: linear-gradient(135deg, #00b4d8, #0077b6);
+          color: white; padding: 12px 16px;
+          font-weight: 600; font-size: 14px;
+          display: flex; justify-content: space-between; align-items: center;
+        ">
+          <span>🔔 নোটিফিকেশন</span>
+          {% if unread_notif_count > 0 %}
+            <span style="
+              background: #e53935; border-radius: 12px;
+              padding: 2px 8px; font-size: 11px;
+            ">{{ unread_notif_count }} নতুন</span>
+          {% endif %}
+        </div>
+
+        <!-- Items -->
+        <div style="max-height: 260px; overflow-y: auto;">
+          {% if latest_notifications %}
+            {% for notif in latest_notifications %}
+              <a href="{% url 'notification_list' %}" style="
+                display: block; padding: 12px 16px;
+                border-bottom: 1px solid #f5f5f5;
+                text-decoration: none; color: #263238;
+                background: {% if not notif.is_read %}#f0f9ff{% else %}white{% endif %};
+                transition: background 0.15s;
+              " onmouseover="this.style.background='#e0f7fa'"
+                 onmouseout="this.style.background='{% if not notif.is_read %}#f0f9ff{% else %}white{% endif %}'">
+                <div style="font-size: 13px; font-weight: 600;">
+                  {% if notif.notif_type == 'reminder' %}⏰
+                  {% elif notif.notif_type == 'update' %}✅
+                  {% else %}🔔{% endif %}
+                  {{ notif.title|truncatechars:40 }}
+                </div>
+                <div style="font-size: 12px; color: #78909c; margin-top: 3px;">
+                  {{ notif.message|truncatechars:55 }}
+                </div>
+                <div style="font-size: 11px; color: #b0bec5; margin-top: 4px;">
+                  {{ notif.created_at|timesince }} আগে
+                </div>
+              </a>
+            {% endfor %}
+          {% else %}
+            <div style="padding: 24px 16px; text-align: center; color: #90a4ae; font-size: 13px;">
+              <div style="font-size: 28px; margin-bottom: 8px;">🔕</div>
+              কোনো নতুন নোটিফিকেশন নেই
+            </div>
+          {% endif %}
+        </div>
+
+        <!-- Footer -->
+        <a href="{% url 'notification_list' %}" style="
+          display: block; text-align: center; padding: 10px;
+          font-size: 13px; font-weight: 600; color: #0077b6;
+          border-top: 1px solid #e0e0e0; background: #f9f9f9;
+          text-decoration: none;
+        " onmouseover="this.style.background='#e0f2f1'"
+           onmouseout="this.style.background='#f9f9f9'">
+          সব নোটিফিকেশন দেখুন →
+        </a>
+      </div>
+    </li>
+    <!-- ✅ BELL শেষ -->
+
+    <!-- Profile Dropdown -->
     <li class="profile-menu">
-      <button class="nav-btn nav-btn-profile" id="profile-btn" onclick="toggleDropdown(event, 'profile-dropdown')">
-        <i class="fa fa-user-circle"></i> {{ request.user.first_name|default:request.user.username }} <span class="dropdown-arrow">▼</span>
+      <button class="nav-btn nav-btn-profile" id="profile-btn"
+              onclick="toggleDropdown(event, 'profile-dropdown')">
+        <i class="fa fa-user-circle"></i>
+        {{ request.user.first_name|default:request.user.username }}
+        <span class="dropdown-arrow">▼</span>
       </button>
       <ul class="dropdown" id="profile-dropdown">
         <li><a href="{% url 'profile' %}">My Profile</a></li>
+        <li><a href="{% url 'vaccine_history_self' %}">My Vaccine History</a></li>
+        <li><a href="{% url 'my_vaccine_requests' %}">My Requests</a></li>
+        <li><a href="{% url 'reminder_list' %}">Reminders</a></li>
+        {% if request.user.is_staff or request.user.is_superuser %}
+        <li><a href="{% url 'admin_vaccine_requests' %}">📋 Manage Requests</a></li>
+        {% endif %}
         <li><a href="{% url 'logout' %}">Logout</a></li>
       </ul>
     </li>
 
-    <li class="lang-menu">
-      <button class="nav-btn nav-btn-lang" id="lang-btn" onclick="toggleDropdown(event, 'lang-dropdown')">
-        Language <span class="dropdown-arrow">▼</span>
-      </button>
-      <ul class="dropdown" id="lang-dropdown">
-        <li onclick="setLanguage('English')">English</li>
-        <li onclick="setLanguage('Bangla')">বাংলা</li>
-      </ul>
+    <!-- Language -->
+<li class="lang-menu">
+  <button class="nav-btn nav-btn-lang" id="lang-btn"
+          onclick="toggleDropdown(event, 'lang-dropdown')">
+    <span class="lang-globe">🌐</span>
+    <span id="lang-current">Language</span>
+    <span class="dropdown-arrow">▼</span>
+  </button>
+  <ul class="dropdown" id="lang-dropdown">
+    <li onclick="setLanguage('English')" class="lang-option active">
+      <span class="lang-flag"></span> English
     </li>
+    <li onclick="setLanguage('Bangla')" class="lang-option">
+      <span class="lang-flag"></span> বাংলা
+    </li>
+  </ul>
+</li>
   </ul>
 </nav>
 
@@ -38,7 +179,6 @@
 /* ========================================
    MODERN HORIZONTAL NAVIGATION
    ======================================== */
-
 .nav_two {
   display: flex;
   align-items: center;
@@ -51,273 +191,146 @@
   z-index: 1000;
   backdrop-filter: blur(10px);
 }
-
 .nav_two .logo img {
-  height: 50px;
-  width: auto;
-  transition: transform 0.3s ease;
+  height: 50px; width: auto; transition: transform 0.3s ease;
 }
-
-.nav_two .logo img:hover {
-  transform: scale(1.05);
-}
-
+.nav_two .logo img:hover { transform: scale(1.05); }
 .nav_two .nav-links {
-  display: flex;
-  align-items: center;
-  list-style: none;
-  gap: 15px;
-  margin: 0;
-  padding: 0;
+  display: flex; align-items: center; list-style: none;
+  gap: 15px; margin: 0; padding: 0;
 }
-
-/* FIX: position:relative এবং display:inline-block দরকার */
 .nav_two .nav-links > li {
-  position: relative;
-  display: inline-block;
+  position: relative; display: inline-block;
 }
 
-/* Base Navigation Button Style */
+/* Base Button */
 .nav-btn {
-  padding: 12px 24px;
-  font-size: 15px;
-  font-weight: 600;
-  text-decoration: none;
-  border: none;
-  border-radius: 25px;
-  cursor: pointer;
-  /* FIX: transition থেকে transform সরিয়ে দিলাম — উপরে উঠলে gap তৈরি হয় */
-  transition: box-shadow 0.3s ease, filter 0.3s ease;
-  position: relative;
-  overflow: hidden;
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
+  padding: 12px 24px; font-size: 15px; font-weight: 600;
+  text-decoration: none; border: none; border-radius: 25px;
+  cursor: pointer; transition: box-shadow 0.3s ease, filter 0.3s ease;
+  position: relative; overflow: visible;
+  display: inline-flex; align-items: center; gap: 8px;
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-  background: white;
-  color: #2c3e50;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  background: white; color: #2c3e50;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
 }
-
-/* Ripple Effect */
 .nav-btn::before {
-  content: '';
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  width: 0;
-  height: 0;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.5);
+  content: ''; position: absolute; top: 50%; left: 50%;
+  width: 0; height: 0; border-radius: 50%;
+  background: rgba(255,255,255,0.5);
   transform: translate(-50%, -50%);
   transition: width 0.5s, height 0.5s;
 }
+.nav-btn:active::before { width: 200px; height: 200px; }
 
-.nav-btn:active::before {
-  width: 200px;
-  height: 200px;
-}
-
-/* Dashboard Button */
+/* Dashboard */
 .nav-btn-1 {
   background: linear-gradient(135deg, #00b4d8 0%, #0077b6 100%);
-  color: white;
-  box-shadow: 0 4px 12px rgba(0, 180, 216, 0.3);
+  color: white; box-shadow: 0 4px 12px rgba(0,180,216,0.3);
 }
-.nav-btn-1:hover {
-  /* FIX: translateY সরিয়ে শুধু shadow বাড়ালাম */
-  box-shadow: 0 6px 20px rgba(0, 180, 216, 0.5);
-  filter: brightness(1.08);
-}
+.nav-btn-1:hover { box-shadow: 0 6px 20px rgba(0,180,216,0.5); filter: brightness(1.08); }
 
-/* Schedule Button */
+/* Schedule */
 .nav-btn-2 {
   background: linear-gradient(135deg, #48c6ef 0%, #6f86d6 100%);
-  color: white;
-  box-shadow: 0 4px 12px rgba(72, 198, 239, 0.3);
+  color: white; box-shadow: 0 4px 12px rgba(72,198,239,0.3);
 }
-.nav-btn-2:hover {
-  box-shadow: 0 6px 20px rgba(72, 198, 239, 0.5);
-  filter: brightness(1.08);
-}
+.nav-btn-2:hover { box-shadow: 0 6px 20px rgba(72,198,239,0.5); filter: brightness(1.08); }
 
-/* Centers Button */
+/* Centers */
 .nav-btn-3 {
   background: linear-gradient(135deg, #0ba360 0%, #3cba92 100%);
-  color: white;
-  box-shadow: 0 4px 12px rgba(11, 163, 96, 0.3);
+  color: white; box-shadow: 0 4px 12px rgba(11,163,96,0.3);
 }
-.nav-btn-3:hover {
-  box-shadow: 0 6px 20px rgba(11, 163, 96, 0.5);
-  filter: brightness(1.08);
-}
+.nav-btn-3:hover { box-shadow: 0 6px 20px rgba(11,163,96,0.5); filter: brightness(1.08); }
 
-/* News Button */
+/* News */
 .nav-btn-4 {
   background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
-  color: white;
-  box-shadow: 0 4px 12px rgba(250, 112, 154, 0.3);
+  color: white; box-shadow: 0 4px 12px rgba(250,112,154,0.3);
 }
-.nav-btn-4:hover {
-  box-shadow: 0 6px 20px rgba(250, 112, 154, 0.5);
-  filter: brightness(1.08);
-}
+.nav-btn-4:hover { box-shadow: 0 6px 20px rgba(250,112,154,0.5); filter: brightness(1.08); }
 
-/* Profile Button */
+/* Request button */
+.nav-btn-req {
+  background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+  color: white; box-shadow: 0 4px 12px rgba(17,153,142,0.3);
+}
+.nav-btn-req:hover { box-shadow: 0 6px 20px rgba(17,153,142,0.5); filter: brightness(1.08); }
+
+/* Bell */
+.nav-btn-bell {
+  background: linear-gradient(135deg, #f7971e 0%, #ffd200 100%);
+  color: white; box-shadow: 0 4px 12px rgba(247,151,30,0.3);
+  min-width: 50px; justify-content: center;
+}
+.nav-btn-bell:hover { box-shadow: 0 6px 20px rgba(247,151,30,0.5); filter: brightness(1.08); }
+
+/* Profile */
 .nav-btn-profile {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
-  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+  color: white; box-shadow: 0 4px 12px rgba(102,126,234,0.3);
 }
-.nav-btn-profile:hover {
-  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.5);
-  filter: brightness(1.08);
-}
-.nav-btn-profile i {
-  font-size: 18px;
-}
+.nav-btn-profile:hover { box-shadow: 0 6px 20px rgba(102,126,234,0.5); filter: brightness(1.08); }
+.nav-btn-profile i { font-size: 18px; }
 
-/* Language Button */
+/* Language */
 .nav-btn-lang {
   background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-  color: white;
-  box-shadow: 0 4px 12px rgba(240, 147, 251, 0.3);
+  color: white; box-shadow: 0 4px 12px rgba(240,147,251,0.3);
 }
-.nav-btn-lang:hover {
-  box-shadow: 0 6px 20px rgba(240, 147, 251, 0.5);
-  filter: brightness(1.08);
-}
+.nav-btn-lang:hover { box-shadow: 0 6px 20px rgba(240,147,251,0.5); filter: brightness(1.08); }
 
-/* Arrow Animation */
-.dropdown-arrow {
-  display: inline-block;
-  margin-left: 5px;
-  transition: transform 0.3s ease;
-}
+.dropdown-arrow { display: inline-block; margin-left: 5px; transition: transform 0.3s ease; }
+.nav-btn.active { box-shadow: 0 8px 25px rgba(0,0,0,0.3) !important; filter: brightness(1.15); }
 
-/* Active State */
-.nav-btn.active {
-  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3) !important;
-  filter: brightness(1.15);
-}
-
-/* ========================================
-   DROPDOWN — CORE FIX
-   ======================================== */
-
-/* FIX ১: margin-top: 10px ছিল — এটাই মূল gap সমস্যা।
-   এখন margin-top: 0, বদলে dropdown-এর ভেতরে padding-top দিলাম
-   যাতে visually space থাকে কিন্তু physically কোনো gap নেই। */
+/* ======== DROPDOWN ======== */
 .dropdown {
-  position: absolute;
-  top: 100%;
-  right: 0;
-  margin-top: 0;          /* ← ছিল 10px, এখন 0 */
-  padding-top: 12px;      /* ← visual space এখন ভেতরে */
-  padding-bottom: 8px;
-  background: white;
-  border-radius: 0 0 12px 12px;
-  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
-  list-style: none;
-  min-width: 160px;
-  opacity: 0;
-  visibility: hidden;
+  position: absolute; top: 100%; right: 0;
+  margin-top: 0; padding-top: 12px; padding-bottom: 8px;
+  background: white; border-radius: 0 0 12px 12px;
+  box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+  list-style: none; min-width: 180px;
+  opacity: 0; visibility: hidden;
   transform: translateY(-5px);
   transition: opacity 0.25s ease, transform 0.25s ease, visibility 0.25s ease;
-  z-index: 9999;
-  pointer-events: none;
+  z-index: 9999; pointer-events: none;
 }
-
-/* FIX ২: button আর dropdown-এর মাঝে invisible bridge
-   mouse যখন margin area-তে থাকে তখনও dropdown ধরে রাখে */
 .dropdown::before {
-  content: '';
-  position: absolute;
-  top: -10px;
-  left: 0;
-  right: 0;
-  height: 10px;
-  background: transparent;
+  content: ''; position: absolute; top: -10px;
+  left: 0; right: 0; height: 10px; background: transparent;
 }
-
 .dropdown.show {
-  opacity: 1;
-  visibility: visible;
-  transform: translateY(0);
-  pointer-events: auto;
+  opacity: 1; visibility: visible;
+  transform: translateY(0); pointer-events: auto;
 }
-
-/* Dropdown items */
-.dropdown li {
-  padding: 0;
-  margin: 0;
-  list-style: none;
-  cursor: pointer;
-  user-select: none;
-}
-
+.dropdown li { padding: 0; margin: 0; list-style: none; cursor: pointer; }
 .dropdown li a {
-  display: block;
-  padding: 12px 20px;
-  color: #2c3e50 !important;
-  text-decoration: none;
-  font-size: 14px;
-  font-weight: 500;
-  transition: background 0.2s ease, color 0.2s ease;
-  cursor: pointer;
+  display: block; padding: 12px 20px;
+  color: #2c3e50 !important; text-decoration: none;
+  font-size: 14px; font-weight: 500;
+  transition: background 0.2s ease;
 }
-
-.dropdown li:hover {
-  background: linear-gradient(135deg, #00b4d8 0%, #0077b6 100%);
-}
-
-.dropdown li:hover a,
-.dropdown li:hover {
-  color: white !important;
-}
-
-.dropdown li:first-child:hover {
-  border-radius: 0;
-}
-.dropdown li:last-child:hover {
-  border-radius: 0 0 12px 12px;
-}
-
-/* Language dropdown-এর plain li (a ছাড়া) */
+.dropdown li:hover { background: linear-gradient(135deg, #00b4d8 0%, #0077b6 100%); }
+.dropdown li:hover a { color: white !important; }
+.dropdown li:last-child:hover { border-radius: 0 0 12px 12px; }
 .dropdown li:not(:has(a)) {
-  padding: 12px 20px;
-  color: #2c3e50;
-  font-size: 14px;
-  font-weight: 500;
+  padding: 12px 20px; color: #2c3e50; font-size: 14px; font-weight: 500;
 }
 
-/* ========================================
-   RESPONSIVE
-   ======================================== */
+/* ======== RESPONSIVE ======== */
 @media (max-width: 1024px) {
   .nav_two { padding: 12px 20px; }
-  .nav-links { gap: 10px; }
-  .nav-btn { padding: 10px 20px; font-size: 14px; }
+  .nav-links { gap: 8px; }
+  .nav-btn { padding: 10px 16px; font-size: 13px; }
 }
-
 @media (max-width: 768px) {
   .nav_two { flex-direction: column; gap: 15px; padding: 15px; }
   .nav-links { flex-wrap: wrap; justify-content: center; gap: 8px; }
   .nav-btn { padding: 10px 18px; font-size: 13px; }
-  .dropdown {
-    left: 50%;
-    right: auto;
-    transform: translateX(-50%) translateY(-5px);
-  }
-  .dropdown.show {
-    transform: translateX(-50%) translateY(0);
-  }
-}
-
-@media (max-width: 480px) {
-  .nav-links { width: 100%; }
-  .nav-links > li { flex: 1 1 45%; }
-  .nav-btn { width: 100%; justify-content: center; padding: 12px 16px; font-size: 13px; }
+  .dropdown { left: 50%; right: auto; transform: translateX(-50%) translateY(-5px); }
+  .dropdown.show { transform: translateX(-50%) translateY(0); }
+  #notifDropdown2 { right: auto; left: 50%; transform: translateX(-50%); }
 }
 </style>
 
@@ -326,7 +339,7 @@
 document.addEventListener('DOMContentLoaded', function () {
   const currentPath = window.location.pathname;
   document.querySelectorAll('.nav-btn').forEach(link => {
-    if (link.getAttribute('href') === currentPath) {
+    if (link.getAttribute && link.getAttribute('href') === currentPath) {
       link.classList.add('active');
     }
   });
@@ -334,43 +347,58 @@ document.addEventListener('DOMContentLoaded', function () {
 
 // ── Dropdown toggle ──────────────────────────────────────────
 function toggleDropdown(event, dropdownId) {
-  event.preventDefault();
-  event.stopPropagation();
-
+  event.preventDefault(); event.stopPropagation();
   const dropdown = document.getElementById(dropdownId);
   const button   = event.currentTarget;
   const arrow    = button.querySelector('.dropdown-arrow');
   const isOpen   = dropdown.classList.contains('show');
-
-  // সব dropdown বন্ধ করো
   closeAllDropdowns();
-
-  // যদি বন্ধ ছিল তাহলে খোলো
   if (!isOpen) {
     dropdown.classList.add('show');
     if (arrow) arrow.style.transform = 'rotate(180deg)';
   }
 }
 
-// ── সব dropdown বন্ধ করার helper ───────────────────────────
 function closeAllDropdowns() {
   document.querySelectorAll('.dropdown').forEach(dd => dd.classList.remove('show'));
-  document.querySelectorAll('.dropdown-arrow').forEach(arr => arr.style.transform = 'rotate(0deg)');
+  document.querySelectorAll('.dropdown-arrow').forEach(a => a.style.transform = 'rotate(0deg)');
+  const nd = document.getElementById('notifDropdown2');
+  if (nd) nd.style.display = 'none';
 }
 
-// ── Document click — সম্পূর্ণ বাইরে click হলেই বন্ধ ────────
-// FIX: pointer-events: none থাকায় dropdown-এর উপর click
-//      document-এ bubble করে না, তাই এটা নিরাপদ
 document.addEventListener('click', function (e) {
-  if (!e.target.closest('.profile-menu') && !e.target.closest('.lang-menu')) {
+  if (!e.target.closest('.profile-menu') &&
+      !e.target.closest('.lang-menu') &&
+      !e.target.closest('.notif-menu')) {
     closeAllDropdowns();
   }
 });
 
-// ── Language selector ────────────────────────────────────────
-// (নিচের IIFE-র window.setLanguage দিয়ে override হবে)
+// ── Notification bell toggle ─────────────────────────────────
+function toggleNotifDropdown2(event) {
+  event.preventDefault(); event.stopPropagation();
+  const dropdown = document.getElementById('notifDropdown2');
+  // অন্য সব বন্ধ করো
+  document.querySelectorAll('.dropdown').forEach(dd => dd.classList.remove('show'));
+  document.querySelectorAll('.dropdown-arrow').forEach(a => a.style.transform = 'rotate(0deg)');
+  // toggle
+  dropdown.style.display = dropdown.style.display === 'block' ? 'none' : 'block';
+}
+
 function setLanguage(lang) {
   const code = (lang === 'Bangla' || lang === 'bn') ? 'bn' : 'en';
+
+  // Button text update
+  const langCurrent = document.getElementById('lang-current');
+  if (langCurrent) {
+    langCurrent.textContent = code === 'bn' ? 'বাংলা' : 'Language';
+  }
+
+  // Active class update
+  document.querySelectorAll('.lang-option').forEach(li => li.classList.remove('active'));
+  const selected = document.querySelector(`.lang-option[onclick*="${lang}"]`);
+  if (selected) selected.classList.add('active');
+
   window._applyLanguage && window._applyLanguage(code);
   closeAllDropdowns();
 }
@@ -378,210 +406,46 @@ function setLanguage(lang) {
 
 <script>
 // ============================================================
-//  VaxSafe — Language Toggle  (English ↔ বাংলা)
-//  FIX: data-original-text attribute দিয়ে loop সমস্যা ঠিক করা
+//  VaxSafe — Language Toggle (English ↔ বাংলা)
+//  data-original-text দিয়ে loop সমস্যা ঠিক করা হয়েছে
 // ============================================================
 (function () {
   const LANG_KEY = 'vaxsafe_lang';
-
   const translations = {
-    "Home": "হোম",
-    "Features": "বৈশিষ্ট্যসমূহ",
-    "About Us": "আমাদের সম্পর্কে",
-    "Contact Us": "যোগাযোগ করুন",
-    "Register": "নিবন্ধন",
-    "Log In": "লগ ইন",
-    "Logout": "লগআউট",
-    "Dashboard": "ড্যাশবোর্ড",
-    "Schedule": "সময়সূচি",
-    "Centers": "কেন্দ্রসমূহ",
-    "News": "সংবাদ",
-    "Profile": "প্রোফাইল",
-    "My Profile": "আমার প্রোফাইল",
-    "Your Health, Future-Proofed.": "আপনার স্বাস্থ্য, ভবিষ্যতের জন্য নিরাপদ।",
-    "The intelligent vaccination ecosystem keeping your family safe, one dose at a time.": "পরিবারের সুরক্ষায় বুদ্ধিমান টিকা ব্যবস্থাপনা — একটি ডোজ একটি সময়ে।",
-    "Get started": "শুরু করুন",
-    "Learn More": "আরও জানুন",
-    "Smart Reminders": "স্মার্ট অনুস্মারক",
-    "Never miss your next Vaccine": "পরবর্তী টিকার কথা কখনো ভুলবেন না",
-    "Family Tracking": "পারিবারিক ট্র্যাকিং",
-    "Manage Vaccinations for your loved ones": "প্রিয়জনদের টিকাদান পরিচালনা করুন",
-    "Center Finder": "কেন্দ্র খুঁজুন",
-    "Locate nearby vaccination centers": "কাছের টিকাদান কেন্দ্র খুঁজুন",
-    "Latest Updates": "সর্বশেষ আপডেট",
-    "Stay informed with the newest vaccine-related news.": "টিকা সংক্রান্ত সর্বশেষ খবর জানুন।",
-    "Get health alerts and vaccine updates": "স্বাস্থ্য সতর্কতা ও টিকা আপডেট পান",
-    "Secure & Private": "নিরাপদ ও গোপনীয়",
-    "Always Available": "সর্বদা উপলব্ধ",
-    "For All Users": "সকল ব্যবহারকারীর জন্য",
-    "VaxSafe is a student-developed web platform dedicated to empowering Bangladeshi families with accessible vaccination management tools.": "VaxSafe একটি শিক্ষার্থী-নির্মিত প্ল্যাটফর্ম যা বাংলাদেশের পরিবারগুলোকে সহজলভ্য টিকা ব্যবস্থাপনার সুবিধা দেয়।",
-    "Our system simplifies healthcare by offering intelligent scheduling, real-time reminders, and secure tracking for family members of all ages.": "আমাদের সিস্টেম বুদ্ধিমান সময়সূচি ও রিয়েল-টাইম অনুস্মারকের মাধ্যমে স্বাস্থ্যসেবা সহজ করে।",
-    "Deeply integrated with Bangladesh's national immunization calendar, VaxSafe connects you to local health centers to ensure no critical dose is missed.": "জাতীয় টিকাদান ক্যালেন্ডারের সাথে সংযুক্ত, VaxSafe আপনাকে স্থানীয় স্বাস্থ্যকেন্দ্রের সাথে যুক্ত করে।",
-    "We make staying protected as easy as checking your email, contributing to a safer, healthier nation.": "সুরক্ষিত থাকাকে আমরা ইমেইল চেক করার মতোই সহজ করে তুলি।",
-    "We'd love to hear from you! Send us a message.": "আপনার কাছ থেকে শুনতে চাই! আমাদের বার্তা পাঠান।",
-    "Send Message": "বার্তা পাঠান",
-    "Send": "পাঠান",
-    "Sign In": "প্রবেশ করুন",
-    "Back": "পেছনে যান",
-    "Forgot Password?": "পাসওয়ার্ড ভুলে গেছেন?",
-    "Don't have an account?": "অ্যাকাউন্ট নেই?",
-    "Or log in with": "অথবা লগ ইন করুন",
-    "Continue with Google": "Google দিয়ে চালিয়ে যান",
-    "Continue with Facebook": "Facebook দিয়ে চালিয়ে যান",
-    "Create Account": "অ্যাকাউন্ট তৈরি করুন",
-    "Join VaxSafe and protect your family's health": "VaxSafe-এ যোগ দিন এবং পরিবারের স্বাস্থ্য রক্ষা করুন",
-    "Back to Home": "হোমে ফিরুন",
-    "Already have an account?": "ইতিমধ্যে অ্যাকাউন্ট আছে?",
-    "Welcome back! Here's your health overview": "স্বাগতম! এখানে আপনার স্বাস্থ্য সারসংক্ষেপ",
-    "Upcoming Vaccinations": "আসন্ন টিকাদান",
-    "Reminders Active": "সক্রিয় অনুস্মারক",
-    "Family Members": "পরিবারের সদস্য",
-    "No updates available at the moment.": "এই মুহূর্তে কোনো আপডেট নেই।",
-    "Add Vaccine": "টিকা যোগ করুন",
-    "Add Family Member": "সদস্য যোগ করুন",
-    "Member Name": "সদস্যের নাম",
-    "Notification": "বিজ্ঞপ্তি",
-    "No family members added yet.": "এখনো কোনো সদস্য যোগ করা হয়নি।",
-    "Keep track of your family's health together": "একসাথে পরিবারের স্বাস্থ্য ট্র্যাক করুন",
-    "Save Member": "সদস্য সংরক্ষণ",
-    "Cancel": "বাতিল",
-    "Add Vaccine Record": "টিকার রেকর্ড যোগ করুন",
-    "Add a new vaccination record for a family member": "পরিবারের সদস্যের জন্য নতুন টিকার রেকর্ড যোগ করুন",
-    "Basic Information": "মৌলিক তথ্য",
-    "Vaccine Type": "টিকার ধরন",
-    "Dose Number": "ডোজ নম্বর",
-    "Date Information": "তারিখের তথ্য",
-    "Date Administered/Scheduled": "প্রদান/নির্ধারিত তারিখ",
-    "Next Dose Date": "পরবর্তী ডোজের তারিখ",
-    "Healthcare Provider": "স্বাস্থ্যসেবা প্রদানকারী",
-    "Additional Details": "অতিরিক্ত বিবরণ",
-    "Vaccination Center/Hospital": "টিকাদান কেন্দ্র/হাসপাতাল",
-    "Batch/Lot Number": "ব্যাচ/লট নম্বর",
-    "Manufacturer": "প্রস্তুতকারক",
-    "Side Effects": "পার্শ্বপ্রতিক্রিয়া",
-    "💾 Save Vaccine Record": "💾 রেকর্ড সংরক্ষণ",
-    "🏥 Vaccination Centers": "🏥 টিকাদান কেন্দ্রসমূহ",
-    "Find nearby vaccination centers in your area": "আপনার এলাকার কাছের টিকাদান কেন্দ্র খুঁজুন",
-    "Centers Available": "টি কেন্দ্র উপলব্ধ",
-    "All Cities": "সকল শহর",
-    "All Vaccines": "সকল টিকা",
-    "Apply Filters": "ফিল্টার প্রয়োগ",
-    "Find Nearest": "নিকটতম খুঁজুন",
-    "Map View": "মানচিত্র দেখুন",
-    "Export List": "তালিকা রপ্তানি",
-    "Verified": "যাচাইকৃত",
-    "View Details": "বিস্তারিত দেখুন",
-    "Get Directions": "দিকনির্দেশনা পান",
-    "No Vaccination Centers Found": "কোনো টিকাদান কেন্দ্র পাওয়া যায়নি",
-    "Reset Filters": "ফিল্টার রিসেট",
-    "24 Hours Open": "২৪ ঘণ্টা খোলা",
-    "Profile Information": "প্রোফাইল তথ্য",
-    "Not provided": "প্রদান করা হয়নি",
-    "Choose File": "ফাইল বেছে নিন",
-    "No file chosen": "কোনো ফাইল নেই",
-    "Save Changes": "পরিবর্তন সংরক্ষণ",
-    "Delete Photo": "ছবি মুছুন",
-    "📅 Vaccination Schedule": "📅 টিকাদান সময়সূচি",
-    "Manage upcoming doses and health records for your family.": "পরিবারের আসন্ন ডোজ ও স্বাস্থ্য রেকর্ড পরিচালনা করুন।",
-    "Edit List": "তালিকা সম্পাদনা",
-    "Add Reminder": "অনুস্মারক যোগ করুন",
-    "No Records Found": "কোনো রেকর্ড নেই",
-    "Your scheduled vaccinations will appear here.": "নির্ধারিত টিকাদান এখানে দেখাবে।",
-    "New Appointment": "নতুন অ্যাপয়েন্টমেন্ট",
-    "Set a new vaccination reminder": "নতুন টিকাদান অনুস্মারক সেট করুন",
-    "Vaccine Name": "টিকার নাম",
-    "Notify Via": "বিজ্ঞপ্তি মাধ্যম",
-    "Save Schedule": "সময়সূচি সংরক্ষণ",
-    "Completed": "সম্পন্ন",
-    "Pending": "অপেক্ষমাণ",
-    "💉 Vaccination Schedule": "💉 টিকাদান সময়সূচি",
-    "Track and manage your family's vaccine records": "পরিবারের টিকার রেকর্ড ট্র্যাক ও পরিচালনা করুন",
-    "Add New Vaccine": "নতুন টিকা যোগ করুন",
-    "All Status": "সকল অবস্থা",
-    "Scheduled": "নির্ধারিত",
-    "Overdue": "বিলম্বিত",
-    "All Members": "সকল সদস্য",
-    "Upcoming": "আসন্ন",
-    "Total Records": "মোট রেকর্ড",
-    "Upcoming Vaccines": "আসন্ন টিকাসমূহ",
-    "Past Vaccines": "পূর্ববর্তী টিকাসমূহ",
-    "days until": "দিন বাকি",
-    "No Vaccine Records Yet": "এখনো কোনো রেকর্ড নেই",
-    "Add First Vaccine": "প্রথম টিকা যোগ করুন",
-    "📰 Health News & Updates": "📰 স্বাস্থ্য সংবাদ ও আপডেট",
-    "Stay informed with the latest health and vaccination news": "সর্বশেষ স্বাস্থ্য ও টিকাদান সংবাদ থেকে আপডেট থাকুন",
-    "Total Articles": "মোট নিবন্ধ",
-    "Featured News": "বৈশিষ্ট্যযুক্ত সংবাদ",
-    "Search articles...": "নিবন্ধ খুঁজুন...",
-    "All Categories": "সকল বিভাগ",
-    "Clear Filters": "ফিল্টার মুছুন",
-    "Featured Articles": "বৈশিষ্ট্যযুক্ত নিবন্ধ",
-    "Read More": "আরও পড়ুন",
-    "All Articles": "সকল নিবন্ধ",
-    "No articles found": "কোনো নিবন্ধ নেই",
-    "Back to News": "সংবাদে ফিরুন",
-    "Summary": "সারসংক্ষেপ",
-    "Related Articles": "সম্পর্কিত নিবন্ধ",
-    "Latest Vaccine Updates": "সর্বশেষ টিকা আপডেট",
-    "All News": "সকল সংবাদ",
-    "Add New Update": "নতুন আপডেট",
-    "Search updates...": "আপডেট খুঁজুন...",
-    "No updates found": "কোনো আপডেট নেই",
-    "Back to Updates": "আপডেটে ফিরুন",
-    "Edit Update": "আপডেট সম্পাদনা",
-    "Verify your Email": "ইমেইল যাচাই করুন",
-    "Please enter the OTP sent to your email:": "আপনার ইমেইলে পাঠানো OTP লিখুন:",
-    "Enter OTP": "OTP লিখুন",
-    "Submit": "জমা দিন",
-    "Resend OTP": "OTP পুনরায় পাঠান",
-    "All rights reserved.": "সর্বস্বত্ব সংরক্ষিত।",
-    "Filter": "ফিল্টার",
-    "Export": "রপ্তানি",
-    "Apply": "প্রয়োগ",
-    "Status": "অবস্থা",
-    "Location": "অবস্থান",
-    "Notes": "নোট",
-    "Age": "বয়স",
-    "Date & Time": "তারিখ ও সময়",
-    "📋 Vaccination Schedule": "📋 টিকাদান সময়সূচি",
-    "Manage and track all vaccination records": "সকল টিকাদান রেকর্ড পরিচালনা ও ট্র্যাক করুন",
-    "Scheduled Date": "নির্ধারিত তারিখ",
-    "Administered Date": "প্রদানের তারিখ",
-    "Next Dose": "পরবর্তী ডোজ",
-    "No Vaccine Records Found": "কোনো রেকর্ড পাওয়া যায়নি",
-    "Stay informed about vaccination programs, campaigns and new programmes": "টিকাদান কর্মসূচি সম্পর্কে আপডেট থাকুন",
-    "General Vaccine News": "সাধারণ টিকা সংবাদ",
-    "VaxSafe combines modern technology with local expertise to make family health protection as simple and reliable as checking your email.": "VaxSafe আধুনিক প্রযুক্তি মিলিয়ে পারিবারিক স্বাস্থ্য সুরক্ষা সহজ করে।",
-    "📌 Important Information": "📌 গুরুত্বপূর্ণ তথ্য",
-    "Please ensure all required fields are filled accurately": "অনুগ্রহ করে সকল প্রয়োজনীয় তথ্য সঠিকভাবে পূরণ করুন",
-    "Language": "ভাষা",
+    "Home": "হোম", "Features": "বৈশিষ্ট্যসমূহ", "About Us": "আমাদের সম্পর্কে",
+    "Contact Us": "যোগাযোগ করুন", "Register": "নিবন্ধন", "Log In": "লগ ইন",
+    "Logout": "লগআউট", "Dashboard": "ড্যাশবোর্ড", "Schedule": "সময়সূচি",
+    "Centers": "কেন্দ্রসমূহ", "News": "সংবাদ", "Profile": "প্রোফাইল",
+    "My Profile": "আমার প্রোফাইল", "Language": "ভাষা",
+    "Upcoming Vaccinations": "আসন্ন টিকাদান", "Reminders Active": "সক্রিয় অনুস্মারক",
+    "Family Members": "পরিবারের সদস্য", "Add Vaccine": "টিকা যোগ করুন",
+    "Add Family Member": "সদস্য যোগ করুন", "Cancel": "বাতিল",
+    "Save Changes": "পরিবর্তন সংরক্ষণ", "Completed": "সম্পন্ন",
+    "Pending": "অপেক্ষমাণ", "Scheduled": "নির্ধারিত", "Overdue": "বিলম্বিত",
+    "Submit": "জমা দিন", "Resend OTP": "OTP পুনরায় পাঠান",
+    "All rights reserved.": "সর্বস্বত্ব সংরক্ষিত.",
+    "Vaccine Name": "টিকার নাম", "Status": "অবস্থা",
+    "Location": "অবস্থান", "Notes": "নোট", "Age": "বয়স",
+    "My Requests": "আমার অনুরোধ", "Reminders": "রিমাইন্ডার",
   };
 
-  // Reverse map: বাংলা → English
   const reverseMap = {};
-  for (const [en, bn] of Object.entries(translations)) {
-    reverseMap[bn] = en;
-  }
+  for (const [en, bn] of Object.entries(translations)) reverseMap[bn] = en;
 
-  // ── FIX: data-original-text দিয়ে সব text node cache করো ──
-  // এতে বারবার translate করলেও loop হবে না
   function cacheOriginalText(root) {
     const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
       acceptNode(node) {
         const parent = node.parentElement;
         if (!parent) return NodeFilter.FILTER_REJECT;
         const tag = parent.tagName.toLowerCase();
-        if (['script', 'style', 'select', 'option'].includes(tag)) return NodeFilter.FILTER_REJECT;
+        if (['script','style','select','option'].includes(tag)) return NodeFilter.FILTER_REJECT;
         if (node.textContent.trim() === '') return NodeFilter.FILTER_REJECT;
         return NodeFilter.FILTER_ACCEPT;
       }
     });
     while (walker.nextNode()) {
       const node = walker.currentNode;
-      // শুধু একবার original text save করো
-      if (!node._originalText) {
-        node._originalText = node.textContent;
-      }
+      if (!node._originalText) node._originalText = node.textContent;
     }
   }
 
@@ -591,7 +455,7 @@ function setLanguage(lang) {
         const parent = node.parentElement;
         if (!parent) return NodeFilter.FILTER_REJECT;
         const tag = parent.tagName.toLowerCase();
-        if (['script', 'style', 'select', 'option'].includes(tag)) return NodeFilter.FILTER_REJECT;
+        if (['script','style','select','option'].includes(tag)) return NodeFilter.FILTER_REJECT;
         if (!node._originalText) return NodeFilter.FILTER_REJECT;
         return NodeFilter.FILTER_ACCEPT;
       }
@@ -600,11 +464,8 @@ function setLanguage(lang) {
       const node = walker.currentNode;
       const original = node._originalText.trim();
       if (toBangla) {
-        if (translations[original]) {
-          node.textContent = node._originalText.replace(original, translations[original]);
-        }
+        if (translations[original]) node.textContent = node._originalText.replace(original, translations[original]);
       } else {
-        // English-এ ফিরুন — সবসময় original text থেকে
         node.textContent = node._originalText;
       }
     }
@@ -612,55 +473,35 @@ function setLanguage(lang) {
 
   function applyPlaceholders(toBangla) {
     document.querySelectorAll('[placeholder]').forEach(el => {
-      if (!el._originalPlaceholder) {
-        el._originalPlaceholder = el.getAttribute('placeholder');
-      }
+      if (!el._originalPlaceholder) el._originalPlaceholder = el.getAttribute('placeholder');
       const orig = el._originalPlaceholder;
-      el.setAttribute('placeholder', toBangla
-        ? (translations[orig] || orig)
-        : orig
-      );
+      el.setAttribute('placeholder', toBangla ? (translations[orig] || orig) : orig);
     });
   }
 
-  function updateLangButton(lang) {
-    const btn = document.getElementById('lang-btn');
-    if (btn) {
-      btn.innerHTML = (lang === 'bn' ? 'বাংলা' : 'Language') + ' <span class="dropdown-arrow">▼</span>';
-    }
-  }
+function updateLangButton(lang) {
+  const btn = document.getElementById('lang-btn');
+  if (btn) btn.innerHTML = (lang === 'bn' ? 'বাংলা' : 'English') + ' <span class="dropdown-arrow">▼</span>';
+}
 
-  // Global function — navbar button ও script উভয়ে ব্যবহার করবে
   window._applyLanguage = function (lang) {
     localStorage.setItem(LANG_KEY, lang);
-    const toBangla = (lang === 'bn');
+    const toBangla = lang === 'bn';
     cacheOriginalText(document.body);
     applyTranslation(document.body, toBangla);
     applyPlaceholders(toBangla);
     updateLangButton(lang);
   };
 
-  // setLanguage override
   window.setLanguage = function (lang) {
     const code = (lang === 'Bangla' || lang === 'bn') ? 'bn' : 'en';
     window._applyLanguage(code);
-    // dropdown বন্ধ করো
-    const dd = document.getElementById('lang-dropdown');
-    if (dd) dd.classList.remove('show');
-    const btn = document.getElementById('lang-btn');
-    if (btn) {
-      const arrow = btn.querySelector('.dropdown-arrow');
-      if (arrow) arrow.style.transform = 'rotate(0deg)';
-    }
+    closeAllDropdowns && closeAllDropdowns();
   };
 
-  // ── Page load-এ saved language apply করো ────────────────
   document.addEventListener('DOMContentLoaded', function () {
     const saved = localStorage.getItem(LANG_KEY);
-    if (saved === 'bn') {
-      // একটু delay দাও যাতে পুরো DOM ready থাকে
-      setTimeout(() => window._applyLanguage('bn'), 100);
-    }
+    if (saved === 'bn') setTimeout(() => window._applyLanguage('bn'), 100);
   });
 })();
 </script>
