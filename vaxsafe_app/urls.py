@@ -24,11 +24,11 @@ urlpatterns = [
     # ─────────────────────────────────────────
     # AUTHENTICATION
     # ─────────────────────────────────────────
-    path('register/', views.register, name='register'),
-    path('login/', views.login_view, name='login'),
-    path('logout/', views.logout, name='logout'),
-    path('verify-otp/', views.verify_otp, name='verify_otp'),  # ✅ নতুন
-    path('resend-otp/', views.resend_otp, name='resend_otp'),  # ✅ নতুন
+    path('register/',    views.register,    name='register'),
+    path('login/',       views.login_view,  name='login'),
+    path('logout/',      views.logout,      name='logout'),
+    path('verify-otp/',  views.verify_otp,  name='verify_otp'),
+    path('resend-otp/',  views.resend_otp,  name='resend_otp'),
 
     # ─────────────────────────────────────────
     # DASHBOARD & PROFILE
@@ -49,12 +49,12 @@ urlpatterns = [
          views.delete_family_member, name='delete_family_member'),
 
     # ─────────────────────────────────────────
-    # VACCINE HISTORY  ✅ নতুন
+    # VACCINE HISTORY
     # ─────────────────────────────────────────
     path('vaccines/history/',
-         views.vaccine_history,      name='vaccine_history_self'),          # নিজের
+         views.vaccine_history,      name='vaccine_history_self'),
     path('vaccines/history/<int:member_id>/',
-         views.vaccine_history,      name='vaccine_history'),               # family member এর
+         views.vaccine_history,      name='vaccine_history'),
 
     # ─────────────────────────────────────────
     # VACCINES  (Admin Only for add/edit/delete)
@@ -68,35 +68,41 @@ urlpatterns = [
     path('vaccines/upcoming/',
          views.upcoming_vaccinations, name='upcoming_vaccinations'),
     path('vaccines/overdue/',
-         views.overdue_vaccinations,  name='overdue_vaccinations'),
+         views.overdue_vaccinations,  name='overdue_vaccinations.html'),
     path('vaccines/<int:vaccine_id>/',
          views.vaccine_detail,        name='vaccine_detail'),
     path('vaccines/<int:vaccine_id>/edit/',
          views.edit_vaccine,          name='edit_vaccine'),
     path('vaccines/<int:vaccine_id>/delete/',
          views.delete_vaccine,        name='delete_vaccine'),
-
-    # ─────────────────────────────────────────
-    # MARK COMPLETED  ✅ নতুন (Admin Quick Action)
-    # ─────────────────────────────────────────
     path('vaccines/<int:vaccine_id>/complete/',
          views.mark_vaccine_completed, name='mark_vaccine_completed'),
 
     # ─────────────────────────────────────────
-    # REMINDERS (পুরনো Reminder model)
+    # ✅ নতুন: VACCINE REQUESTS (User → Admin)
+    # ─────────────────────────────────────────
+    path('vaccine-requests/submit/',
+         views.submit_vaccine_request, name='submit_vaccine_request'),
+    path('vaccine-requests/my/',
+         views.my_vaccine_requests,    name='my_vaccine_requests'),
+
+    # Admin Only
+    path('vaccine-requests/admin/',
+         views.admin_vaccine_requests,  name='admin_vaccine_requests'),
+    path('vaccine-requests/<int:pk>/approve/',
+         views.approve_vaccine_request, name='approve_vaccine_request'),
+    path('vaccine-requests/<int:pk>/reject/',
+         views.reject_vaccine_request,  name='reject_vaccine_request'),
+
+    # ─────────────────────────────────────────
+    # REMINDERS
     # ─────────────────────────────────────────
     path('reminders/add/',  views.add_reminder,  name='add_reminder'),
     path('reminders/edit/', views.edit_reminder, name='edit_reminder'),
-
-    # ─────────────────────────────────────────
-    # VACCINE REMINDERS (নতুন VaccineReminder model)
-    # reminder_list  → User শুধু দেখতে পারবে
-    # set_reminder   → Admin Only: যেকোনো user এর জন্য set করো
-    # ─────────────────────────────────────────
     path('reminders/',
          views.reminder_list,    name='reminder_list'),
     path('reminders/set/',
-         views.set_reminder,     name='set_reminder'),          # ✅ Admin Only
+         views.set_reminder,     name='set_reminder'),
     path('reminders/delete/<int:pk>/',
          views.delete_reminder,  name='delete_reminder'),
 
