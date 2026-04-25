@@ -18,13 +18,17 @@ from .models import (
     Profile, FamilyMember, FamilyGroupMember, FamilyGroup,
     FamilyInvitation, Reminder, Update, Vaccine,
     VaccinationCenter, News, VaccineUpdate,
-    Notification, VaccineReminder, VaccineSchedule,OTPVerification,
+    Notification, VaccineReminder, VaccineSchedule, OTPVerification,
+    # ✅ FIXED: এই দুটো import যোগ করা হয়েছে
+    VaccineRequest, AreaAdmin,
 )
 from .forms import (
     ProfileForm, FamilyMemberForm, VaccineForm,
     FamilyCreateForm, FamilyInviteForm, AdminTransferForm,
     VaccineReminderForm,
     VaccineApplicationForm,
+    # ✅ FIXED: VaccineRequestForm import যোগ করা হয়েছে
+    VaccineRequestForm,
 )
 
 # =====================================================
@@ -121,7 +125,6 @@ def _send_reminder_notification(vr, target_user):
 # =====================================================
 
 def _build_user_family_json(all_users):
-    """প্রতিটি user এর family members একটি JSON dict এ রাখো।"""
     data = {}
     for u in all_users:
         members = FamilyMember.objects.filter(user=u).order_by('name')
@@ -152,12 +155,10 @@ def validate_password(password):
 
 
 def _generate_otp():
-    """৬ digit random OTP।"""
     return str(random.randint(100000, 999999))
 
 
 def _send_otp_email(email, otp, full_name):
-    """Registration OTP email পাঠাও।"""
     subject = "VaxSafe — আপনার OTP কোড"
     body = f"""
 HELLO {full_name},
@@ -197,7 +198,6 @@ def register(request):
         password         = request.POST.get("password", "")
         confirm_password = request.POST.get("reset_password", "")
 
-        # ── Validation ──────────────────────────────────────────
         if not all([full_name, email, password, confirm_password]):
             messages.error(request, "সব তথ্য পূরণ করতে হবে।")
             return render(request, "htmlpages/register.html")
@@ -216,13 +216,10 @@ def register(request):
             messages.error(request, "এই Email দিয়ে আগেই account তৈরি আছে।")
             return render(request, "htmlpages/register.html")
 
-        # ── OTP তৈরি ও DB তে save ────────────────────────────────
-        # পুরনো pending OTP মুছে দাও (একই email এর জন্য)
         OTPVerification.objects.filter(email=email, is_used=False).delete()
 
         otp = _generate_otp()
 
-        # Password hash করে save করো (plain text save করা unsafe)
         from django.contrib.auth.hashers import make_password
         otpobj = OTPVerification.objects.create(
             email           = email,
@@ -231,14 +228,12 @@ def register(request):
             hashed_password = make_password(password),
         )
 
-        # ── Email পাঠাও ──────────────────────────────────────────
         sent = _send_otp_email(email, otp, full_name)
         if not sent:
             messages.error(request, "❌ Email পাঠাতে সমস্যা হয়েছে। আবার চেষ্টা করুন।")
             otpobj.delete()
             return render(request, "htmlpages/register.html")
 
-        # ── Session এ email রাখো (verify page এ দরকার হবে) ──────
         request.session['pending_otp_email'] = email
 
         messages.success(request, f"✅ {email} এ একটি OTP পাঠানো হয়েছে। ১০ মিনিটের মধ্যে verify করুন।")
@@ -248,7 +243,6 @@ def register(request):
 
 
 def verify_otp(request):
-    """OTP verify করে account তৈরি করো।"""
     email = request.session.get('pending_otp_email')
     if not email:
         messages.error(request, "Session expired। আবার register করুন।")
@@ -281,15 +275,13 @@ def verify_otp(request):
             messages.error(request, f"❌ OTP ভুল হয়েছে। আরও {remaining} বার সুযোগ আছে।")
             return render(request, "htmlpages/verify.html", {'email': email})
 
-        # ── OTP সঠিক → Account তৈরি করো ─────────────────────────
         try:
-            from django.contrib.auth.hashers import is_password_usable
             user = User(
                 username   = email,
                 email      = email,
                 first_name = otpobj.full_name,
             )
-            user.password = otpobj.hashed_password  # already hashed
+            user.password = otpobj.hashed_password
             user.save()
 
             Profile.objects.get_or_create(user=user)
@@ -297,7 +289,6 @@ def verify_otp(request):
             otpobj.is_used = True
             otpobj.save()
 
-            # session পরিষ্কার করো
             if 'pending_otp_email' in request.session:
                 del request.session['pending_otp_email']
 
@@ -314,7 +305,6 @@ def verify_otp(request):
 
 
 def resend_otp(request):
-    """OTP resend।"""
     email = request.session.get('pending_otp_email')
     if not email:
         messages.error(request, "Session expired। আবার register করুন।")
@@ -328,11 +318,10 @@ def resend_otp(request):
         messages.error(request, "OTP পাওয়া যায়নি। আবার register করুন।")
         return redirect('register')
 
-    # নতুন OTP তৈরি করো
     new_otp = _generate_otp()
-    otpobj.otp      = new_otp
-    otpobj.attempts = 0
-    otpobj.created_at = timezone.now()  # timer reset
+    otpobj.otp        = new_otp
+    otpobj.attempts   = 0
+    otpobj.created_at = timezone.now()
     otpobj.save()
 
     sent = _send_otp_email(email, new_otp, otpobj.full_name)
@@ -478,15 +467,12 @@ def profile_view(request):
             messages.success(request, "✅ Profile photo deleted!")
             return redirect('profile')
 
-        # ✅ user= pass করো যাতে email initial হয়
         form = ProfileForm(request.POST, request.FILES, instance=profile, user=request.user)
         if form.is_valid():
             form.save()
 
-            # ✅ Email আলাদাভাবে User model এ save করো
             new_email = form.cleaned_data.get('email', '').strip()
             if new_email and new_email != request.user.email:
-                # অন্য কেউ এই email ব্যবহার করছে কিনা দেখো
                 if User.objects.filter(email=new_email).exclude(pk=request.user.pk).exists():
                     messages.error(request, "❌ এই Email অন্য কেউ ব্যবহার করছে।")
                     return render(request, 'htmlpages/profile.html', {
@@ -500,12 +486,12 @@ def profile_view(request):
         else:
             messages.error(request, "❌ Please correct the errors below.")
     else:
-        # ✅ user= pass করো
         form = ProfileForm(instance=profile, user=request.user)
 
     return render(request, 'htmlpages/profile.html', {
         'form': form, 'profile': profile, 'title': 'My Profile'
     })
+
 
 # =====================================================
 # FAMILY MEMBERS
@@ -573,8 +559,6 @@ def delete_family_member(request, member_id):
 
 @login_required
 def add_vaccine(request):
-    """Admin Only — যেকোনো user / সবার জন্য vaccine সেট করো + Auto Notification."""
-
     if not (request.user.is_staff or request.user.is_superuser):
         messages.error(request, "❌ টিকার রেকর্ড যোগ/সম্পাদনা করার অনুমতি নেই। শুধুমাত্র Admin এই কাজ করতে পারবেন।")
         return redirect('vaccine_schedule')
@@ -582,7 +566,6 @@ def add_vaccine(request):
     all_users                = User.objects.all().order_by('first_name', 'username')
     user_family_members_json = _build_user_family_json(all_users)
 
-    # ─── GET: target_user param ───────────────────────────────────────
     target_user        = request.user
     get_target_user_id = request.GET.get('target_user', '').strip()
 
@@ -593,11 +576,9 @@ def add_vaccine(request):
             target_user = request.user
             get_target_user_id = ''
 
-    # ─── POST ─────────────────────────────────────────────────────────
     if request.method == 'POST':
         target_user_id = request.POST.get('target_user', '').strip()
 
-        # ✅ "ALL USERS" case
         if target_user_id == 'all':
             form = VaccineForm(request.POST, user=request.user)
             if form.is_valid():
@@ -605,19 +586,19 @@ def add_vaccine(request):
                 count = 0
                 for tu in active_users:
                     v = Vaccine(
-                        user              = tu,
-                        family_member     = None,   # সবার নিজের জন্য
-                        name              = form.cleaned_data['name'],
-                        dose_number       = form.cleaned_data['dose_number'],
-                        date_administered = form.cleaned_data['date_administered'],
-                        next_dose_date    = form.cleaned_data.get('next_dose_date'),
-                        location          = form.cleaned_data.get('location') or '',
+                        user                = tu,
+                        family_member       = None,
+                        name                = form.cleaned_data['name'],
+                        dose_number         = form.cleaned_data['dose_number'],
+                        date_administered   = form.cleaned_data['date_administered'],
+                        next_dose_date      = form.cleaned_data.get('next_dose_date'),
+                        location            = form.cleaned_data.get('location') or '',
                         healthcare_provider = form.cleaned_data.get('healthcare_provider') or '',
-                        status            = form.cleaned_data.get('status', 'Scheduled'),
-                        notes             = form.cleaned_data.get('notes') or '',
-                        manufacturer      = form.cleaned_data.get('manufacturer') or '',
-                        batch_number      = form.cleaned_data.get('batch_number') or '',
-                        side_effects      = form.cleaned_data.get('side_effects') or '',
+                        status              = form.cleaned_data.get('status', 'Scheduled'),
+                        notes               = form.cleaned_data.get('notes') or '',
+                        manufacturer        = form.cleaned_data.get('manufacturer') or '',
+                        batch_number        = form.cleaned_data.get('batch_number') or '',
+                        side_effects        = form.cleaned_data.get('side_effects') or '',
                     )
                     v.save()
                     _send_vaccine_scheduled_notification(v, tu)
@@ -639,7 +620,6 @@ def add_vaccine(request):
                     'user_family_members_json': user_family_members_json,
                 })
 
-        # ✅ SPECIFIC USER case (পুরনো logic)
         if target_user_id:
             try:
                 target_user = User.objects.get(id=int(target_user_id))
@@ -679,7 +659,6 @@ def add_vaccine(request):
         else:
             messages.error(request, '❌ Please correct the errors below.')
 
-    # ─── GET ──────────────────────────────────────────────────────────
     else:
         form = VaccineForm(user=target_user)
         if get_target_user_id and get_target_user_id != 'all':
@@ -696,6 +675,7 @@ def add_vaccine(request):
         'selected_target_user_id':  get_target_user_id,
         'user_family_members_json': user_family_members_json,
     })
+
 
 @login_required
 def edit_vaccine(request, vaccine_id):
@@ -1191,13 +1171,12 @@ def reminder_list(request):
 
 @login_required
 def set_reminder(request):
-    """Admin Only — User + Family Member select করে reminder সেট।"""
     if not (request.user.is_staff or request.user.is_superuser):
         messages.error(request, "❌ শুধুমাত্র Admin Reminder সেট করতে পারবেন।")
         return redirect('reminder_list')
 
     all_users                = User.objects.all().order_by('first_name', 'username')
-    user_family_members_json = _build_user_family_json(all_users)  # ✅ shared helper use
+    user_family_members_json = _build_user_family_json(all_users)
 
     if request.method == 'POST':
         form = VaccineReminderForm(request.POST)
@@ -1287,3 +1266,257 @@ def vaccine_schedule(request):
         'is_admin':          request.user.is_staff or request.user.is_superuser,
     }
     return render(request, 'htmlpages/vaccine_schedule.html', context)
+
+
+# =====================================================
+# AREA ROUTING HELPER
+# =====================================================
+
+def _get_area_admin_for_user(user):
+    """
+    user এর এলাকা দেখে সেই এলাকার admin বের করো।
+    যদি সেই এলাকার কোনো admin না থাকে → super admin কে return করো।
+    """
+    try:
+        user_area      = user.profile.area or 'Central'
+        area_admin_obj = AreaAdmin.objects.get(area=user_area, is_active=True)
+        return area_admin_obj.admin_user
+    except AreaAdmin.DoesNotExist:
+        superuser = User.objects.filter(is_superuser=True, is_active=True).first()
+        return superuser
+    except Exception:
+        return User.objects.filter(is_superuser=True, is_active=True).first()
+
+
+# =====================================================
+# USER: VACCINE REQUEST SUBMIT
+# =====================================================
+
+@login_required
+def submit_vaccine_request(request):
+    """User Admin কে টিকার জন্য request পাঠায়।"""
+    if request.method == 'POST':
+        form = VaccineRequestForm(request.POST, user=request.user)
+        if form.is_valid():
+            vr         = form.save(commit=False)
+            vr.user    = request.user
+
+            assigned      = _get_area_admin_for_user(request.user)
+            vr.assigned_admin = assigned
+            vr.save()
+
+            if assigned:
+                recipient_name = vr.get_recipient_name()
+                user_area = getattr(request.user.profile, 'area', 'অজানা এলাকা') or 'অজানা এলাকা'
+                Notification.objects.create(
+                    user       = assigned,
+                    title      = f"📋 নতুন টিকা Request: {vr.vaccine_name}",
+                    message    = (
+                        f"{request.user.get_full_name() or request.user.username} "
+                        f"({user_area}) '{recipient_name}' এর জন্য "
+                        f"'{vr.vaccine_name}' টিকার request করেছেন।\n"
+                        f"📅 পছন্দের তারিখ: {vr.preferred_date.strftime('%d %B %Y')}"
+                    ),
+                    notif_type = 'alert',
+                )
+                if assigned.email:
+                    try:
+                        send_mail(
+                            subject=f"VaxSafe — নতুন Vaccine Request: {vr.vaccine_name}",
+                            message=(
+                                f"User: {request.user.get_full_name() or request.user.username}\n"
+                                f"Area: {user_area}\n"
+                                f"Vaccine: {vr.vaccine_name}\n"
+                                f"Preferred Date: {vr.preferred_date}\n"
+                                f"Note: {vr.note or '-'}\n\n"
+                                f"Dashboard থেকে Approve/Reject করুন।"
+                            ),
+                            from_email=settings.DEFAULT_FROM_EMAIL,
+                            recipient_list=[assigned.email],
+                            fail_silently=True,
+                        )
+                    except Exception as e:
+                        print(f"[VaxSafe] Admin notification email error: {e}")
+
+            messages.success(
+                request,
+                f"✅ '{vr.vaccine_name}' এর জন্য request পাঠানো হয়েছে! "
+                f"Admin approve করলে আপনি notification পাবেন।"
+            )
+            return redirect('my_vaccine_requests')
+        else:
+            messages.error(request, "❌ তথ্য সঠিকভাবে পূরণ করুন।")
+    else:
+        form = VaccineRequestForm(user=request.user)
+
+    # ✅ নতুন code (family_members যোগ করুন)
+    from .models import FamilyMember  # উপরে import না থাকলে যোগ করুন
+
+    return render(request, 'htmlpages/submit_vaccine_request.html', {
+        'form': form,
+        'title': 'টিকার জন্য Request করুন',
+        'family_members': FamilyMember.objects.filter(user=request.user),
+    })
+
+
+@login_required
+def my_vaccine_requests(request):
+    """User নিজের সব request দেখতে পারবে।"""
+    requests_qs = VaccineRequest.objects.filter(
+        user=request.user
+    ).select_related('family_member', 'assigned_admin').order_by('-created_at')
+
+    return render(request, 'htmlpages/my_vaccine_requests.html', {
+        'vaccine_requests': requests_qs,
+        'pending_count':    requests_qs.filter(status='Pending').count(),
+        'approved_count':   requests_qs.filter(status='Approved').count(),
+        'rejected_count':   requests_qs.filter(status='Rejected').count(),
+        'title':            'আমার টিকা Requests',
+    })
+
+
+# =====================================================
+# ADMIN: MANAGE VACCINE REQUESTS (Area-filtered)
+# =====================================================
+
+@login_required
+def admin_vaccine_requests(request):
+    if not (request.user.is_staff or request.user.is_superuser):
+        messages.error(request, "❌ শুধুমাত্র Admin এই পেজ দেখতে পারবেন।")
+        return redirect('dashboard')
+
+    if request.user.is_superuser:
+        requests_qs = VaccineRequest.objects.all().select_related(
+            'user', 'family_member', 'assigned_admin'
+        )
+    else:
+        requests_qs = VaccineRequest.objects.filter(
+            assigned_admin=request.user
+        ).select_related('user', 'family_member')
+
+    status_filter = request.GET.get('status', '')
+    if status_filter:
+        requests_qs = requests_qs.filter(status=status_filter)
+
+    requests_qs = requests_qs.order_by('-created_at')
+
+    return render(request, 'htmlpages/admin_vaccine_requests.html', {
+        'vaccine_requests': requests_qs,
+        'pending_count':    requests_qs.filter(status='Pending').count(),
+        'approved_count':   requests_qs.filter(status='Approved').count(),
+        'rejected_count':   requests_qs.filter(status='Rejected').count(),
+        'status_filter':    status_filter,
+        'title':            'Vaccine Requests (Admin)',
+        'is_superuser':     request.user.is_superuser,
+    })
+
+
+@login_required
+def approve_vaccine_request(request, pk):
+    if not (request.user.is_staff or request.user.is_superuser):
+        messages.error(request, "❌ Permission denied.")
+        return redirect('dashboard')
+
+    vr = get_object_or_404(VaccineRequest, pk=pk)
+
+    if not request.user.is_superuser and vr.assigned_admin != request.user:
+        messages.error(request, "❌ এই request আপনার এলাকার নয়।")
+        return redirect('admin_vaccine_requests')
+
+    if request.method == 'POST':
+        admin_note = request.POST.get('admin_note', '').strip()
+
+        vr.status     = 'Approved'
+        vr.admin_note = admin_note
+        vr.save()
+
+        vaccine = Vaccine.objects.create(
+            user              = vr.user,
+            family_member     = vr.family_member,
+            name              = vr.vaccine_name,
+            dose_number       = '1st',
+            date_administered = vr.preferred_date,
+            location          = vr.preferred_center or '',
+            status            = 'Scheduled',
+            notes             = f"User Request থেকে Approved। Admin Note: {admin_note}" if admin_note else "User Request থেকে Approved।",
+        )
+
+        recipient = vr.get_recipient_name()
+        title = f"✅ টিকা Request Approved: {vr.vaccine_name}"
+        msg_lines = [
+            f"আপনার '{vr.vaccine_name}' টিকার request approve হয়েছে!",
+            f"👤 Recipient: {recipient}",
+            f"📅 তারিখ: {vr.preferred_date.strftime('%d %B %Y')}",
+        ]
+        if vr.preferred_center:
+            msg_lines.append(f"📍 কেন্দ্র: {vr.preferred_center}")
+        if admin_note:
+            msg_lines.append(f"📝 Admin Note: {admin_note}")
+
+        Notification.objects.create(
+            user       = vr.user,
+            title      = title,
+            message    = "\n".join(msg_lines),
+            notif_type = 'update',
+        )
+        if vr.user.email:
+            try:
+                send_mail(
+                    subject=f"VaxSafe — {vr.vaccine_name} Request Approved!",
+                    message=f"{title}\n\n" + "\n".join(msg_lines) + "\n\n---\nVaxSafe",
+                    from_email=settings.DEFAULT_FROM_EMAIL,
+                    recipient_list=[vr.user.email],
+                    fail_silently=True,
+                )
+            except Exception as e:
+                print(f"[VaxSafe] Approval email error: {e}")
+
+        messages.success(
+            request,
+            f"✅ Request approve হয়েছে। Vaccine record তৈরি হয়েছে। "
+            f"{vr.user.username} কে Notification পাঠানো হয়েছে।"
+        )
+        return redirect('admin_vaccine_requests')
+
+    return render(request, 'htmlpages/approve_request_confirm.html', {
+        'vr': vr, 'title': 'Request Approve করুন',
+    })
+
+
+@login_required
+def reject_vaccine_request(request, pk):
+    if not (request.user.is_staff or request.user.is_superuser):
+        messages.error(request, "❌ Permission denied.")
+        return redirect('dashboard')
+
+    vr = get_object_or_404(VaccineRequest, pk=pk)
+
+    if not request.user.is_superuser and vr.assigned_admin != request.user:
+        messages.error(request, "❌ এই request আপনার এলাকার নয়।")
+        return redirect('admin_vaccine_requests')
+
+    if request.method == 'POST':
+        admin_note = request.POST.get('admin_note', '').strip()
+
+        vr.status     = 'Rejected'
+        vr.admin_note = admin_note
+        vr.save()
+
+        title = f"❌ টিকা Request Rejected: {vr.vaccine_name}"
+        Notification.objects.create(
+            user       = vr.user,
+            title      = title,
+            message    = (
+                f"দুঃখিত, আপনার '{vr.vaccine_name}' request reject হয়েছে।\n"
+                f"📝 কারণ: {admin_note or 'Admin কোনো কারণ দেননি।'}\n\n"
+                f"পুনরায় request করতে পারেন।"
+            ),
+            notif_type = 'alert',
+        )
+
+        messages.warning(request, f"Request reject করা হয়েছে। {vr.user.username} কে Notification পাঠানো হয়েছে।")
+        return redirect('admin_vaccine_requests')
+
+    return render(request, 'htmlpages/reject_request_confirm.html', {
+        'vr': vr, 'title': 'Request Reject করুন',
+    })
