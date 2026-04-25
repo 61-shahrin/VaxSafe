@@ -8,6 +8,19 @@ from django.utils.translation import gettext_lazy as _
 
 
 # ============================================================
+# AREA CHOICES  (top-level — সব জায়গায় ব্যবহার হবে)
+# ============================================================
+
+AREA_CHOICES = [
+    ('Farmgate',  'Farmgate'),
+    ('Mirpur-10', 'Mirpur-10'),
+    ('Banani',    'Banani'),
+    ('Uttara',    'Uttara'),
+    ('Central',   'Central / Other'),
+]
+
+
+# ============================================================
 # UPDATE MODEL
 # ============================================================
 
@@ -45,6 +58,14 @@ class Profile(models.Model):
     address       = models.TextField(blank=True, null=True)
     blood_group   = models.CharField(max_length=5, blank=True, null=True)
     photo         = models.ImageField(upload_to='profile_pics/', blank=True, null=True)
+
+    # ✅ FIXED: area field যোগ করা হয়েছে
+    area = models.CharField(
+        max_length=50,
+        choices=AREA_CHOICES,
+        blank=True, null=True,
+        help_text="আপনার এলাকা — Admin route করার জন্য ব্যবহৃত হবে"
+    )
 
     current_family = models.ForeignKey(
         'FamilyGroup',
@@ -528,7 +549,7 @@ class FamilyInvitation(models.Model):
 
 
 # ============================================================
-# ✅ NOTIFICATION MODEL  (নতুন)
+# NOTIFICATION MODEL
 # ============================================================
 
 class Notification(models.Model):
@@ -538,7 +559,6 @@ class Notification(models.Model):
         ('alert',    'General Alert'),
     ]
 
-    # ✅ related_name আলাদা রাখা হয়েছে — Reminder এর সাথে কোনো conflict নেই
     user       = models.ForeignKey(User, on_delete=models.CASCADE, related_name='user_notifications')
     title      = models.CharField(max_length=200)
     message    = models.TextField()
@@ -556,8 +576,7 @@ class Notification(models.Model):
 
 
 # ============================================================
-# ✅ VACCINE REMINDER MODEL  — family_member field যোগ করা হয়েছে
-# শুধু এই class টা models.py তে replace করো
+# VACCINE REMINDER MODEL
 # ============================================================
 
 class VaccineReminder(models.Model):
@@ -569,7 +588,6 @@ class VaccineReminder(models.Model):
     is_sent       = models.BooleanField(default=False)
     created_at    = models.DateTimeField(auto_now_add=True)
 
-    # ✅ নতুন field — কোন family member এর জন্য reminder (optional)
     family_member = models.ForeignKey(
         'FamilyMember',
         on_delete=models.SET_NULL,
@@ -588,10 +606,11 @@ class VaccineReminder(models.Model):
         return f"{self.user.username} (Self) — {self.vaccine_name} — {self.reminder_date}"
 
     def get_recipient_name(self):
-        """কার জন্য reminder সেট আছে তার নাম।"""
         if self.family_member:
             return self.family_member.name
         return self.user.get_full_name() or self.user.username
+
+
 # ============================================================
 # VACCINE SCHEDULE MODEL (Admin-controlled)
 # ============================================================
@@ -642,25 +661,25 @@ class VaccineSchedule(models.Model):
     created_at     = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        ordering         = ['vaccine_name', 'dose_number']
-        verbose_name     = 'Vaccine Schedule'
+        ordering            = ['vaccine_name', 'dose_number']
+        verbose_name        = 'Vaccine Schedule'
         verbose_name_plural = 'Vaccine Schedules'
-        unique_together  = ('vaccine_name', 'dose_number')
+        unique_together     = ('vaccine_name', 'dose_number')
 
     def __str__(self):
         days = f" → পরের ডোজ {self.interval_days} দিন পর" if self.interval_days else " (শেষ ডোজ)"
         return f"{self.vaccine_name} — {self.dose_number}{days}"
 
+
 # ============================================================
 # CUSTOM VACCINE TYPE MODEL (Admin-controlled)
-# নতুন vaccine add হলে সব user কে notify করবে
 # ============================================================
 
 class CustomVaccineType(models.Model):
-    name              = models.CharField(max_length=200, unique=True)
-    description       = models.TextField(blank=True, null=True)
-    is_active         = models.BooleanField(default=True)
-    notify_all_users  = models.BooleanField(
+    name             = models.CharField(max_length=200, unique=True)
+    description      = models.TextField(blank=True, null=True)
+    is_active        = models.BooleanField(default=True)
+    notify_all_users = models.BooleanField(
         default=True,
         help_text="✅ Save করলে সব user কে App Notification পাঠাবে"
     )
@@ -668,15 +687,16 @@ class CustomVaccineType(models.Model):
     created_at  = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        ordering = ['name']
+        ordering            = ['name']
         verbose_name        = 'Custom Vaccine Type'
         verbose_name_plural = 'Custom Vaccine Types'
 
     def __str__(self):
         return self.name
 
+
 # ============================================================
-# OTP VERIFICATION MODEL (Registration এর জন্য)
+# OTP VERIFICATION MODEL
 # ============================================================
 
 class OTPVerification(models.Model):
@@ -703,3 +723,88 @@ class OTPVerification(models.Model):
 
     def __str__(self):
         return f"{self.email} — {self.otp}"
+
+
+# ============================================================
+# ✅ FIXED: AREA ADMIN MODEL  (top-level — OTPVerification এর বাইরে)
+# ============================================================
+
+class AreaAdmin(models.Model):
+    admin_user = models.OneToOneField(
+        User,
+        on_delete=models.CASCADE,
+        related_name='area_admin',
+        null=True,          # ✅ এটা যোগ করো
+        blank=True,         # ✅ এটা যোগ করো
+        help_text="যে staff user কে এই এলাকার admin করা হবে"
+    )
+    area = models.CharField(
+        max_length=50,
+        choices=AREA_CHOICES,
+        unique=True,
+        default='',  # ✅ এটা যোগ করো
+        help_text="এই admin কোন এলাকার দায়িত্বে আছেন"
+    )
+
+    phone      = models.CharField(max_length=20, blank=True, null=True)
+    is_active  = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+
+# ============================================================
+# ✅ FIXED: VACCINE REQUEST MODEL  (top-level — OTPVerification এর বাইরে)
+# ============================================================
+
+class VaccineRequest(models.Model):
+    STATUS_CHOICES = [
+        ('Pending',  'Pending'),
+        ('Approved', 'Approved'),
+        ('Rejected', 'Rejected'),
+    ]
+
+    user = models.ForeignKey(
+        User, on_delete=models.CASCADE, related_name='vaccine_requests'
+    )
+    family_member = models.ForeignKey(
+        'FamilyMember', on_delete=models.SET_NULL,
+        null=True, blank=True, related_name='vaccine_requests'
+    )
+
+    vaccine_name = models.CharField(max_length=200)
+    preferred_date = models.DateField(null=True, blank=True, help_text="পছন্দের তারিখ")
+    preferred_center = models.CharField(max_length=200, blank=True, null=True)
+    note = models.TextField(blank=True, null=True)
+
+    assigned_admin = models.ForeignKey(
+        User, on_delete=models.SET_NULL,
+        null=True, blank=True, related_name='assigned_vaccine_requests'
+    )
+
+    status     = models.CharField(max_length=20, choices=STATUS_CHOICES, default='Pending')
+    admin_note = models.TextField(blank=True, null=True, help_text="Admin এর Response / Note")
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering            = ['-created_at']
+        verbose_name        = 'Vaccine Request'
+        verbose_name_plural = 'Vaccine Requests'
+
+    def __str__(self):
+        recipient = self.family_member.name if self.family_member else (
+            self.user.get_full_name() or self.user.username
+        )
+        return f"{recipient} — {self.vaccine_name} [{self.status}]"
+
+    def get_recipient_name(self):
+        if self.family_member:
+            return self.family_member.name
+        return self.user.get_full_name() or self.user.username
+
+    def get_user_area(self):
+        """User এর এলাকা বের করো (Profile.area থেকে)।"""
+        try:
+            return self.user.profile.area or 'Central'
+        except Exception:
+            return 'Central'
